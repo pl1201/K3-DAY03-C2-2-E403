@@ -143,6 +143,18 @@ class MockProvider(BaseLLMProvider):
     đang ở bước nào trong chuỗi nhiều-tool.
     """
     def generate(self, prompt: str, system_prompt: str = "") -> str:
+        # system_prompt phân biệt Chatbot Baseline (không có Action/Tool) với
+        # ReAct Agent (bắt buộc định dạng Thought/Action/Final Answer). Nếu
+        # gọi ở chế độ baseline, KHÔNG được trả về cú pháp ReAct — người dùng
+        # sẽ thấy nguyên văn "Thought:.../Action:..." rất xấu và sai bản chất
+        # (baseline không có Tool nên không nên nhắc tới Action).
+        if "ReAct Agent" not in system_prompt:
+            return (
+                "(Mock) Mình chưa có kết nối API thật nên chỉ trả lời được "
+                "bằng kiến thức lý thuyết chung, không tra cứu được dữ liệu "
+                "thực tế cho câu hỏi này."
+            )
+
         text = prompt.lower()
         observation_count = prompt.count("Observation:")
 

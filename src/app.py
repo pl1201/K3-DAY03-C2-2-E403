@@ -30,12 +30,6 @@ from providers import get_llm_provider  # noqa: E402
 
 load_dotenv()
 
-# Một provider dùng chung cho cả server — get_llm_provider() đọc biến môi
-# trường LLM_PROVIDER một lần khi module này được nạp (khi chạy `python
-# src/app.py`). Đổi provider yêu cầu khởi động lại server, chấp nhận được
-# cho phạm vi bài lab.
-PROVIDER = get_llm_provider()
-
 # Nhận diện "Action: ten_tool[tham_so]" trên MỘT dòng — tránh nuốt nhầm nội
 # dung nhiều dòng nếu model lỡ viết thêm giải thích phía sau.
 _ACTION_PATTERN = re.compile(r"Action:\s*(\w+)\s*\[(.*?)\]\s*$", re.MULTILINE)
@@ -407,7 +401,7 @@ HTML = r"""<!doctype html>
   const chat = document.querySelector('#chat');
   const welcome = document.querySelector('#welcome');
   const historyBox = document.querySelector('#history');
-  let mode = 'chat', started = false, history = [];
+  let mode = 'chat', started = false, sending = false, history = [];
 
   function setMode(button) {
     document.querySelectorAll('.mode').forEach(el => el.classList.remove('active'));
@@ -463,20 +457,25 @@ HTML = r"""<!doctype html>
     const div = document.createElement('div'); div.textContent = String(text); return div.innerHTML;
   }
   async function send() {
-    const text=input.value.trim(); if (!text) return;
+    const text=input.value.trim(); if (!text || sending) return;
     start(text); addMessage(text,'user'); input.value=''; resize();
+    sending = true;
     const bubble = addMessage('Đang suy nghĩ…', 'assistant');
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({query: text, mode: mode})
+      const response = await fetch('/api/chat', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({message:text, mode})
       });
-      const data = await res.json();
-      bubble.textContent = data.answer || data.error || 'Không có phản hồi từ máy chủ.';
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Không thể kết nối');
+      bubble.textContent = data.answer || 'Không có phản hồi từ máy chủ.';
       if (mode === 'agent') renderTrace(bubble, data.steps);
-    } catch (err) {
-      bubble.textContent = 'Lỗi kết nối tới máy chủ: ' + err;
+    } catch (error) {
+      bubble.textContent = 'Mình chưa thể trả lời lúc này. Bạn thử lại sau một chút nhé.';
+      console.error(error);
+    } finally {
+      sending = false; input.focus();
     }
   }
   function renderHistory() {
@@ -498,6 +497,8 @@ HTML = r"""<!doctype html>
 
 
 class AppHandler(BaseHTTPRequestHandler):
+    provider = None
+
     def do_GET(self):
         if self.path not in ("/", "/index.html"):
             self.send_error(404)
@@ -508,46 +509,70 @@ class AppHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+            # Trình duyệt đã đóng hoặc tải lại trang trước khi gửi xong.
+            return
 
     def do_POST(self):
         if self.path != "/api/chat":
             self.send_error(404)
             return
 
-        length = int(self.headers.get("Content-Length", 0) or 0)
-        raw_body = self.rfile.read(length) if length else b""
         try:
-            payload = json.loads(raw_body or b"{}")
-        except json.JSONDecodeError:
-            self._send_json({"error": "JSON không hợp lệ."}, status=400)
-            return
+            content_length = int(self.headers.get("Content-Length", "0"))
+            if content_length <= 0 or content_length > 20_000:
+                self._send_json({"error": "Nội dung yêu cầu không hợp lệ."}, status=400)
+                return
 
-        query = (payload.get("query") or "").strip()
-        mode = payload.get("mode") or "chat"
-        if not query:
-            self._send_json({"error": "Thiếu nội dung 'query'."}, status=400)
-            return
+            payload = json.loads(self.rfile.read(content_length).decode("utf-8"))
+            user_query = str(payload.get("message", "")).strip()
+            mode = payload.get("mode") or "chat"
+            if not user_query:
+                self._send_json({"error": "Bạn chưa nhập câu hỏi."}, status=400)
+                return
 
-        if mode == "agent":
-            result = run_react_agent(query, PROVIDER)
-            self._send_json({
-                "answer": result["answer"],
-                "steps": result["steps"],
-                "stopped_reason": result["stopped_reason"],
-            })
-        else:
-            answer = run_baseline_chatbot(query, PROVIDER)
-            self._send_json({"answer": answer, "steps": []})
+            if AppHandler.provider is None:
+                AppHandler.provider = get_llm_provider()
+
+            if mode == "agent":
+                result = run_react_agent(user_query, AppHandler.provider)
+                self._send_json({
+                    "answer": result["answer"],
+                    "steps": result["steps"],
+                    "stopped_reason": result["stopped_reason"],
+                    "mode": "agent",
+                    "provider": AppHandler.provider.__class__.__name__,
+                })
+            else:
+                answer = run_baseline_chatbot(user_query, AppHandler.provider)
+                self._send_json({
+                    "answer": answer,
+                    "steps": [],
+                    "mode": "chat",
+                    "provider": AppHandler.provider.__class__.__name__,
+                    "model": getattr(AppHandler.provider, "model_name", "offline-mock"),
+                })
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            self._send_json({"error": "Dữ liệu gửi lên không đúng định dạng."}, status=400)
+        except Exception as error:  # noqa: BLE001 - phòng thủ có chủ đích: 1 request lỗi không được làm sập server
+            print(f"Lỗi khi xử lý /api/chat: {error}")
+            self._send_json({"error": "Hệ thống đang bận, vui lòng thử lại."}, status=500)
 
     def _send_json(self, payload, status=200):
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+            # Người dùng có thể refresh hoặc đóng tab trong lúc model xử lý.
+            return False
+        return True
 
     def log_message(self, format_string, *args):
         return
