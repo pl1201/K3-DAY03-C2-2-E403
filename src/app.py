@@ -20,6 +20,7 @@ from tools import (
     get_relationship_advice,
 )
 from prompts import CHATBOT_BASELINE_PROMPT, MAX_ITERATIONS  # noqa: E402
+from providers import get_llm_provider  # noqa: E402
 
 load_dotenv()
 
@@ -259,7 +260,7 @@ HTML = r"""<!doctype html>
   const chat = document.querySelector('#chat');
   const welcome = document.querySelector('#welcome');
   const historyBox = document.querySelector('#history');
-  let mode = 'chat', started = false, history = [];
+  let mode = 'chat', started = false, sending = false, history = [];
 
   function setMode(button) {
     document.querySelectorAll('.mode').forEach(el => el.classList.remove('active'));
@@ -287,15 +288,25 @@ HTML = r"""<!doctype html>
     const bubble = document.createElement('div'); bubble.className='bubble'; bubble.textContent=text;
     row.appendChild(bubble); chat.appendChild(row); chat.scrollTop=chat.scrollHeight;
   }
-  function send() {
-    const text=input.value.trim(); if (!text) return;
+  async function send() {
+    const text=input.value.trim(); if (!text || sending) return;
     start(text); addMessage(text,'user'); input.value=''; resize();
-    setTimeout(() => addMessage(
-      mode === 'agent'
-        ? 'Mình đã nhận yêu cầu. Khi phần AI được kết nối, các bước thực hiện sẽ xuất hiện ngay tại đây.'
-        : 'Mình đã sẵn sàng lắng nghe. Chúng ta sẽ kết nối khả năng trả lời AI ở bước tiếp theo nhé.',
-      'assistant'
-    ), 350);
+    sending = true;
+    try {
+      const response = await fetch('/api/chat', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({message:text, mode})
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Không thể kết nối');
+      addMessage(data.answer,'assistant');
+    } catch (error) {
+      addMessage('Mình chưa thể trả lời lúc này. Bạn thử lại sau một chút nhé.','assistant');
+      console.error(error);
+    } finally {
+      sending = false; input.focus();
+    }
   }
   function renderHistory() {
     historyBox.innerHTML='';
@@ -316,6 +327,8 @@ HTML = r"""<!doctype html>
 
 
 class AppHandler(BaseHTTPRequestHandler):
+    provider = None
+
     def do_GET(self):
         if self.path not in ("/", "/index.html"):
             self.send_error(404)
@@ -326,7 +339,87 @@ class AppHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+            # Trình duyệt đã đóng hoặc tải lại trang trước khi gửi xong.
+            return
+
+    def do_POST(self):
+        if self.path != "/api/chat":
+            self.send_error(404)
+            return
+
+        try:
+            content_length = int(self.headers.get("Content-Length", "0"))
+            if content_length <= 0 or content_length > 20_000:
+                self._send_json(
+                    {"error": "Nội dung yêu cầu không hợp lệ."},
+                    status=400,
+                )
+                return
+
+            payload = json.loads(
+                self.rfile.read(content_length).decode("utf-8")
+            )
+            user_query = str(payload.get("message", "")).strip()
+            mode = payload.get("mode", "chat")
+            if not user_query:
+                self._send_json(
+                    {"error": "Bạn chưa nhập câu hỏi."},
+                    status=400,
+                )
+                return
+
+            if mode != "chat":
+                self._send_json({
+                    "answer": (
+                        "Chế độ Trợ lý tác vụ sẽ được kết nối ở bước tiếp theo. "
+                        "Bạn có thể chuyển sang Trò chuyện để dùng AI ngay."
+                    ),
+                    "mode": "agent",
+                })
+                return
+
+            if AppHandler.provider is None:
+                AppHandler.provider = get_llm_provider()
+
+            answer = run_baseline_chatbot(user_query, AppHandler.provider)
+            self._send_json({
+                "answer": answer,
+                "mode": "chat",
+                "provider": AppHandler.provider.__class__.__name__,
+                "model": getattr(
+                    AppHandler.provider,
+                    "model_name",
+                    "offline-mock",
+                ),
+            })
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            self._send_json(
+                {"error": "Dữ liệu gửi lên không đúng định dạng."},
+                status=400,
+            )
+        except Exception as error:
+            print(f"Lỗi khi xử lý chat: {error}")
+            self._send_json(
+                {"error": "Hệ thống đang bận, vui lòng thử lại."},
+                status=500,
+            )
+
+    def _send_json(self, payload, status=200):
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        try:
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+            # Người dùng có thể refresh hoặc đóng tab trong lúc model xử lý.
+            return False
+        return True
 
     def log_message(self, format_string, *args):
         return
