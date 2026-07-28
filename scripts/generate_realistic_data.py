@@ -5,6 +5,7 @@ Su dung Faker + realistic Vietnamese names and data
 
 import json
 import random
+import os
 from faker import Faker
 
 fake = Faker('vi_VN')  # Vietnamese locale
@@ -114,12 +115,11 @@ if __name__ == "__main__":
     # Tao 30 users
     dataset = generate_dataset(30)
 
-    # Luu vao JSON
-    output_file = "data/users_realistic.json"
-
-    # Tao thu muc data neu chua co
-    import os
-    os.makedirs("data", exist_ok=True)
+    # Output path relative to root
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    output_dir = os.path.join(root_dir, "data")
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = os.path.join(output_dir, "users_realistic.json")
 
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(dataset, f, ensure_ascii=False, indent=2)

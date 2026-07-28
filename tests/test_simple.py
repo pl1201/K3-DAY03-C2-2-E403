@@ -4,7 +4,7 @@ TEST SCRIPT - Simple version without emoji for Windows console
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 from tools import (
     get_personality_profile,

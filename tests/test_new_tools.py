@@ -3,7 +3,8 @@ Test script cho 2 tools moi: get_zodiac_compatibility va get_mbti_compatibility
 """
 
 import sys
-sys.path.append('src')
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 from tools import get_zodiac_compatibility, get_mbti_compatibility
 

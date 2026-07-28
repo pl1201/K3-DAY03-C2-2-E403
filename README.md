@@ -14,19 +14,19 @@
 ## 🚀 QUICK START (Đọc ngay nếu mới vào)
 
 ```bash
-# 1. Kiểm tra 6 tools hoạt động
-python test_logic.py        # → 12/12 tests PASS ✅
-python test_new_tools.py    # → 12/12 tests PASS ✅
+# 1. Kiểm tra 6 tools hoạt động (24/24 PASS)
+python tests/test_logic.py        # → 12/12 tests PASS ✅
+python tests/test_new_tools.py    # → 12/12 tests PASS ✅
 
-# 2. Chạy demo app
+# 2. Chạy demo app chính
 python src/app.py
 # → Demo chatbot vs ReAct agent với test cases gốc
 
-# 3. Xem database 30 users thực tế
-python -c "import json; print(json.dumps(json.load(open('data/users_realistic.json')), indent=2, ensure_ascii=False))" | head -50
+# 3. Sinh dữ liệu thực tế mới (nếu muốn)
+python scripts/generate_realistic_data.py
 ```
 
-📖 **Đọc thêm:** [QUICK_START.md](QUICK_START.md) - Hướng dẫn đầy đủ
+📖 **Đọc thêm:** [docs/QUICK_START.md](docs/QUICK_START.md) - Hướng dẫn chi tiết dự án
 
 ---
 
@@ -46,32 +46,7 @@ Bài Lab giúp bạn hiểu rõ sự tiến hóa qua 4 cấp độ của hệ th
 
 ---
 
-### 📂 2. CẤU TRÚC THƯ MỤC DỰ ÁN
-
-```text
-📁 Day-3-Lab-Chatbot-vs-react-agent-E402/
-├── 📄 README.md                 <-- 📘 Tổng quan bài Lab & Thang điểm
-├── 📄 .env.example              <-- 🔑 File mẫu API Key
-├── 📄 requirements.txt          <-- 📦 Thư viện cần cài đặt
-│
-├── 📁 config/                   <-- 🛠️ CẤU HÌNH & DỮ LIỆU
-│   └── 📄 test_cases.json       <-- 🟢 [Role 1] Bộ đề 5 Test Cases thử thách AI
-│
-├── 📁 src/                      <-- 💻 MÃ NGUỒN PYTHON (BOILERPLATE)
-│   ├── 📄 tools.py              <-- 🛠️ [Role 2] Khai báo các công cụ (Tools)
-│   ├── 📄 prompts.py            <-- 🧠 [Role 3] ReAct System Prompt & Guardrails
-│   └── 📄 app.py                <-- 🚀 [Role 4] Core App ghép nối & chạy ReAct Loop
-│
-└── 📁 docs/                     <-- 📚 TÀI LIỆU HƯỚNG DẪN & BÁO CÁO
-    ├── 📄 CODELAB.md            <-- 🎓 [LMS Format] Hướng dẫn thực hành từng bước Codelab
-    ├── 📄 PHAN_CONG_CONG_VIEC.md <-- 📋 [BẮT ĐẦU TẠI ĐÂY] Sổ tay thực hành & Checklist 5 Roles
-    ├── 📄 DANH_SACH_DE_TAI.md    <-- 💡 Danh sách 10 chủ đề gợi ý
-    └── 📄 trace_eval.md          <-- 📊 [Role 5] Báo cáo Log Trace & Đánh giá Agentic Fit
-```
-
----
-
-### ⏱️ 3. LỘ TRÌNH THỰC HÀNH (4 MỐC / 150 PHÚT)
+### ⏱️ 2. LỘ TRÌNH THỰC HÀNH THEO THỨ TỰ (4 MỐC / 150 PHÚT)
 
 ```mermaid
 timeline
@@ -84,18 +59,61 @@ timeline
 
 ---
 
-### 💯 4. CƠ CHẾ CHẤM ĐIỂM  (SCORING RUBRIC)
+### 📂 3. CẤU TRÚC THƯ MỤC DỰ ÁN & VAI TRÒ FILE
 
-| Tiêu chí                                |  Trọng số  | Mô tả chi tiết                                                                                                             | Bằng chứng kiểm tra (Artifacts)                                        |
-| :---------------------------------------- | :-----------: | :---------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------ |
-| **1. Agentic Fit & Test Design**    | **20%** | Phân tích đúng 4 tiêu chí Agentic Fit cho chủ đề tự chọn. Bộ test cases đủ góc cạnh (đơn giản, multi-step, edge cases). | Bảng chấm điểm (`docs/trace_eval.md`) + `config/test_cases.json`. |
-| **2. ReAct Implementation & Tools** | **30%** | Tool description rõ ràng. Vòng lặp ReAct chạy đúng chuẩn `Thought -> Action -> Observation`.                         | Code trong `src/tools.py` + `src/app.py`.                              |
-| **3. Guardrails & Observability**   | **20%** | Bắt được lỗi loop, có max iterations (Guardrail). Trích xuất được ít nhất 1 Trace log hoàn chỉnh.                     | File `src/prompts.py` + Log trong `docs/trace_eval.md`.                |
-| **4. Inter-group Attack & Defense** | **20%** | Phản biện tốt khi gọi ngẫu nhiên hoặc cử 1 bạn đi chấm chéo (+10đ). Agent chống đỡ tốt / fallback chuẩn (+10đ).        | Biên bản Cross-Audit / Trả lời phản biện.                             |
-| **5. Hybrid Decision Flowchart**    | **10%** | Sơ đồ thể hiện rõ khi nào đi Chatbot path, khi nào đi ReAct Agent path.                                             | Sơ đồ Flowchart (`docs/hybrid_flowchart.mermaid`).                   |
-| 🎁 **BONUS: Autonomous Agent**     | **+10%**| Thử nghiệm tính năng Planning (tự chia nhỏ mục tiêu) hoặc Memory cho Agent (Cấp 4).                                  | Demo code trong `src/app.py` hoặc giải trình trong report.           |
+```text
+📁 K3-Day03-Lab-Chatbot-vs-react-agent-E403/
+├── 📄 README.md                 <-- 📘 Tổng quan bài Lab & Thang điểm
+├── 📄 .env.example              <-- 🔑 File mẫu cấu hình API Key
+├── 📄 requirements.txt          <-- 📦 Thư viện Python cần cài đặt
+│
+├── 📁 config/                   <-- 🛠️ [Role 1] CẤU HÌNH & BỘ ĐỀ TEST
+│   └── 📄 test_cases.json       <-- 📋 Bộ đề 5 Test Cases thử thách AI
+│
+├── 📁 data/                     <-- 🗄️ [DỮ LIỆU THỰC TẾ]
+│   └── 📄 users_realistic.json  <-- 👥 Database 30 người dùng thực tế (Faker)
+│
+├── 📁 src/                      <-- 💻 [Role 2, 3, 4] MÃ NGUỒN PYTHON CHÍNH
+│   ├── 📄 tools.py              <-- 🛠️ [Role 2] Khai báo 6 công cụ (Tools Specs)
+│   ├── 📄 prompts.py            <-- 🧠 [Role 3] ReAct System Prompt & Phanh Guardrails
+│   ├── 📄 app.py                <-- 🚀 [Role 4] Core App ghép nối & chạy ReAct Loop
+│   ├── 📄 providers.py          <-- 🔌 Khởi tạo LLM Provider
+│   └── 📁 ai_levels/            <-- 🤖 Các cấp độ AI (Level 1 - Level 4)
+│
+├── 📁 tests/                    <-- 🧪 [TEST SCRIPTS]
+│   ├── 📄 test_logic.py         <-- Kiểm thử 12/12 test logic công cụ
+│   ├── 📄 test_new_tools.py     <-- Kiểm thử 12/12 test công cụ mới (Zodiac & MBTI)
+│   └── 📄 test_simple.py        <-- Test đơn giản không màu
+│
+├── 📁 scripts/                  <-- ⚙️ [GENERATION SCRIPTS]
+│   └── 📄 generate_realistic_data.py <-- Script sinh 30 users bằng Faker
+│
+└── 📁 docs/                     <-- 📚 [Role 5] TÀI LIỆU HƯỚNG DẪN & BÁO CÁO
+    ├── 📄 PHAN_CONG_CONG_VIEC.md <-- 📋 [BẮT ĐẦU TẠI ĐÂY] Sổ tay thực hành 5 Roles
+    ├── 📄 CODELAB.md            <-- 🎓 Hướng dẫn thực hành từng bước Codelab
+    ├── 📄 trace_eval.md          <-- 📊 Báo cáo Log Trace & Đánh giá Agentic Fit (19/20đ)
+    ├── 📄 DANH_SACH_DE_TAI.md    <-- 💡 Gợi ý 10 chủ đề
+    └── 📁 reports/              <-- 📑 Thư mục chứa các file báo cáo/checklist chi tiết
+        ├── 📄 QUICK_START.md
+        ├── 📄 START_HERE.md
+        ├── 📄 ROLE2_DONE.md
+        └── ...
+```
+
+---
+
+### 💯 4. CƠ CHẾ CHẤM ĐIỂM (SCORING RUBRIC)
+
+| Tiêu chí | Trọng số | Mô tả chi tiết | Bằng chứng kiểm tra (Artifacts) |
+| :--- | :---: | :--- | :--- |
+| **1. Agentic Fit & Test Design** | **20%** | Phân tích đúng 4 tiêu chí Agentic Fit cho chủ đề tự chọn. Bộ test cases đủ góc cạnh (đơn giản, multi-step, edge cases). | Bảng chấm điểm (`docs/trace_eval.md`) + `config/test_cases.json`. |
+| **2. ReAct Implementation & Tools** | **30%** | Tool description rõ ràng. Vòng lặp ReAct chạy đúng chuẩn `Thought -> Action -> Observation`. | Code trong `src/tools.py` + `src/app.py`. |
+| **3. Guardrails & Observability** | **20%** | Bắt được lỗi loop, có max iterations (Guardrail). Trích xuất được ít nhất 1 Trace log hoàn chỉnh. | File `src/prompts.py` + Log trong `docs/trace_eval.md`. |
+| **4. Inter-group Attack & Defense** | **20%** | Phản biện tốt khi gọi ngẫu nhiên hoặc cử 1 bạn đi chấm chéo (+10đ). Agent chống đỡ tốt / fallback chuẩn (+10đ). | Biên bản Cross-Audit / Trả lời phản biện. |
+| **5. Hybrid Decision Flowchart** | **10%** | Sơ đồ thể hiện rõ khi nào đi Chatbot path, khi nào đi ReAct Agent path. | Sơ đồ Flowchart (`docs/hybrid_flowchart.mermaid`). |
+| 🎁 **BONUS: Autonomous Agent** | **+10%** | Thử nghiệm tính năng Planning (tự chia nhỏ mục tiêu) hoặc Memory cho Agent (Cấp 4). | Demo code trong `src/app.py` hoặc giải trình trong report. |
 
 ---
 
 > 🚀 **BẮT ĐẦU LÀM BÀI**:
-> Vui lòng mở sổ tay thực hành 👉 **[PHAN_CONG_CONG_VIEC.md](file:///c:/Users/Admin/Documents/VinUni/LabCoachVin/LabKeyCoach/Day-3-Lab-Chatbot-vs-react-agent-E402/docs/PHAN_CONG_CONG_VIEC.md)** để xem phân vai và checklist công việc cụ thể cho từng thành viên!
+> Vui lòng mở sổ tay thực hành 👉 **[PHAN_CONG_CONG_VIEC.md](docs/PHAN_CONG_CONG_VIEC.md)** để xem phân vai và checklist công việc cụ thể cho từng thành viên!

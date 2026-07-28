@@ -7,7 +7,7 @@ import sys
 import os
 
 # Dam bao import tu src/ hoat dong
-sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 from tools import (
     get_personality_profile,
@@ -80,8 +80,6 @@ def test_calculate_compatibility():
     print("\n🧮 Test 2.4: Kiểm tra logic tính điểm")
     result = calculate_compatibility("huy", "nga")
     print(result)
-    # Huy và Nga có 2 sở thích chung: Đọc sách, Âm nhạc
-    # → Điểm sở thích = 2 * 15 = 30
     assert "30/100" in result or "Điểm sở thích" in result
     print("✅ PASS - Thuật toán đúng")
 

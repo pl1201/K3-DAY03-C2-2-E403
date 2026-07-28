@@ -12,7 +12,6 @@ import os
 # ===== LOAD DATABASE THỰC TẾ TỪ FILE JSON =====
 def load_user_database():
     """Load database từ file JSON"""
-    # Tìm file data
     possible_paths = [
         "data/users_realistic.json",
         "../data/users_realistic.json",
@@ -115,26 +114,32 @@ def get_personality_profile(user_id: str) -> str:
         str: Thông tin chi tiết về hồ sơ cá nhân, tính cách, sở thích
 
     Error Handling:
-        Trả về thông báo lỗi nếu không tìm thấy user_id
+        Trả về thông báo lỗi nếu không tìm thấy user_id hoặc input không hợp lệ.
     """
-    user_id_lower = user_id.lower().strip()
+    try:
+        if not user_id or not isinstance(user_id, str):
+            return "LỖI: Tham số user_id không hợp lệ (phải là chuỗi ký tự)."
 
-    if user_id_lower not in USER_DATABASE:
-        return f"LỖI: Không tìm thấy hồ sơ người dùng '{user_id}'. Các user hợp lệ: {', '.join(USER_DATABASE.keys())}."
+        user_id_lower = user_id.lower().strip()
 
-    profile = USER_DATABASE[user_id_lower]
-    interests_str = ", ".join(profile["interests"])
+        if user_id_lower not in USER_DATABASE:
+            return f"LỖI: Không tìm thấy hồ sơ người dùng '{user_id}'. Các user hợp lệ: {', '.join(USER_DATABASE.keys())}."
 
-    return (
-        f"👤 Hồ sơ của {profile['name']}:\n"
-        f"   • Tuổi: {profile['age']}\n"
-        f"   • Giới tính: {profile['gender']}\n"
-        f"   • Tính cách: {profile['personality']}\n"
-        f"   • Sở thích: {interests_str}\n"
-        f"   • Cung hoàng đạo: {profile['zodiac']}\n"
-        f"   • Tình trạng: {profile['relationship_status']}\n"
-        f"   • Đang tìm kiếm: {profile['looking_for']}"
-    )
+        profile = USER_DATABASE[user_id_lower]
+        interests_str = ", ".join(profile["interests"])
+
+        return (
+            f"👤 Hồ sơ của {profile['name']}:\n"
+            f"   • Tuổi: {profile['age']}\n"
+            f"   • Giới tính: {profile['gender']}\n"
+            f"   • Tính cách: {profile['personality']}\n"
+            f"   • Sở thích: {interests_str}\n"
+            f"   • Cung hoàng đạo: {profile['zodiac']}\n"
+            f"   • Tình trạng: {profile['relationship_status']}\n"
+            f"   • Đang tìm kiếm: {profile['looking_for']}"
+        )
+    except Exception as e:
+        return f"LỖI: Xảy ra lỗi khi lấy hồ sơ người dùng ({str(e)})."
 
 
 def calculate_compatibility(user1_id: str, user2_id: str) -> str:
@@ -149,50 +154,56 @@ def calculate_compatibility(user1_id: str, user2_id: str) -> str:
         str: Điểm tương thích (0-100) và phân tích chi tiết
 
     Error Handling:
-        Trả về thông báo lỗi nếu không tìm thấy một trong hai user_id
+        Trả về thông báo lỗi nếu không tìm thấy một trong hai user_id hoặc input không hợp lệ.
     """
-    user1_id_lower = user1_id.lower().strip()
-    user2_id_lower = user2_id.lower().strip()
+    try:
+        if not user1_id or not isinstance(user1_id, str) or not user2_id or not isinstance(user2_id, str):
+            return "LỖI: Tham số user1_id hoặc user2_id không hợp lệ."
 
-    if user1_id_lower not in USER_DATABASE:
-        return f"LỖI: Không tìm thấy người dùng '{user1_id}'."
-    if user2_id_lower not in USER_DATABASE:
-        return f"LỖI: Không tìm thấy người dùng '{user2_id}'."
+        user1_id_lower = user1_id.lower().strip()
+        user2_id_lower = user2_id.lower().strip()
 
-    user1 = USER_DATABASE[user1_id_lower]
-    user2 = USER_DATABASE[user2_id_lower]
+        if user1_id_lower not in USER_DATABASE:
+            return f"LỖI: Không tìm thấy người dùng '{user1_id}'."
+        if user2_id_lower not in USER_DATABASE:
+            return f"LỖI: Không tìm thấy người dùng '{user2_id}'."
 
-    # Tính điểm dựa trên sở thích chung
-    common_interests = set(user1["interests"]) & set(user2["interests"])
-    interest_score = len(common_interests) * 15  # Mỗi sở thích chung: +15 điểm
+        user1 = USER_DATABASE[user1_id_lower]
+        user2 = USER_DATABASE[user2_id_lower]
 
-    # Tính điểm dựa trên cung hoàng đạo
-    zodiac_pair = (user1["zodiac"], user2["zodiac"])
-    zodiac_score = ZODIAC_COMPATIBILITY.get(zodiac_pair, 50)  # Mặc định 50 nếu không có data
+        # Tính điểm dựa trên sở thích chung
+        common_interests = set(user1["interests"]) & set(user2["interests"])
+        interest_score = len(common_interests) * 15  # Mỗi sở thích chung: +15 điểm
 
-    # Tính điểm tổng hợp
-    total_score = min(100, (interest_score + zodiac_score) // 2)
+        # Tính điểm dựa trên cung hoàng đạo
+        zodiac_pair = (user1["zodiac"], user2["zodiac"])
+        zodiac_score = ZODIAC_COMPATIBILITY.get(zodiac_pair, 50)  # Mặc định 50 nếu không có data
 
-    # Đánh giá mức độ tương thích
-    if total_score >= 80:
-        level = "Rất cao ❤️❤️❤️"
-    elif total_score >= 60:
-        level = "Cao ❤️❤️"
-    elif total_score >= 40:
-        level = "Trung bình ❤️"
-    else:
-        level = "Thấp 💔"
+        # Tính điểm tổng hợp
+        total_score = min(100, (interest_score + zodiac_score) // 2)
 
-    common_interests_str = ", ".join(common_interests) if common_interests else "Không có"
+        # Đánh giá mức độ tương thích
+        if total_score >= 80:
+            level = "Rất cao ❤️❤️❤️"
+        elif total_score >= 60:
+            level = "Cao ❤️❤️"
+        elif total_score >= 40:
+            level = "Trung bình ❤️"
+        else:
+            level = "Thấp 💔"
 
-    return (
-        f"💕 Phân tích độ tương thích giữa {user1['name']} và {user2['name']}:\n"
-        f"   • Điểm tổng hợp: {total_score}/100\n"
-        f"   • Mức độ: {level}\n"
-        f"   • Sở thích chung: {common_interests_str}\n"
-        f"   • Điểm sở thích: {interest_score}/100\n"
-        f"   • Điểm cung hoàng đạo ({user1['zodiac']} - {user2['zodiac']}): {zodiac_score}/100"
-    )
+        common_interests_str = ", ".join(common_interests) if common_interests else "Không có"
+
+        return (
+            f"💕 Phân tích độ tương thích giữa {user1['name']} và {user2['name']}:\n"
+            f"   • Điểm tổng hợp: {total_score}/100\n"
+            f"   • Mức độ: {level}\n"
+            f"   • Sở thích chung: {common_interests_str}\n"
+            f"   • Điểm sở thích: {interest_score}/100\n"
+            f"   • Điểm cung hoàng đạo ({user1['zodiac']} - {user2['zodiac']}): {zodiac_score}/100"
+        )
+    except Exception as e:
+        return f"LỖI: Xảy ra lỗi khi tính độ tương thích ({str(e)})."
 
 
 def search_matches(user_id: str, min_compatibility: int = 60) -> str:
@@ -207,49 +218,55 @@ def search_matches(user_id: str, min_compatibility: int = 60) -> str:
         str: Danh sách những người phù hợp được sắp xếp theo điểm tương thích
 
     Error Handling:
-        Trả về thông báo lỗi nếu không tìm thấy user_id
+        Trả về thông báo lỗi nếu không tìm thấy user_id hoặc input không hợp lệ.
     """
-    user_id_lower = user_id.lower().strip()
+    try:
+        if not user_id or not isinstance(user_id, str):
+            return "LỖI: Tham số user_id không hợp lệ."
 
-    if user_id_lower not in USER_DATABASE:
-        return f"LỖI: Không tìm thấy người dùng '{user_id}'."
+        user_id_lower = user_id.lower().strip()
 
-    user = USER_DATABASE[user_id_lower]
-    matches = []
+        if user_id_lower not in USER_DATABASE:
+            return f"LỖI: Không tìm thấy người dùng '{user_id}'."
 
-    for candidate_id, candidate in USER_DATABASE.items():
-        if candidate_id == user_id_lower:
-            continue  # Bỏ qua chính mình
+        user = USER_DATABASE[user_id_lower]
+        matches = []
 
-        # Tính điểm tương thích
-        common_interests = set(user["interests"]) & set(candidate["interests"])
-        interest_score = len(common_interests) * 15
+        for candidate_id, candidate in USER_DATABASE.items():
+            if candidate_id == user_id_lower:
+                continue  # Bỏ qua chính mình
 
-        zodiac_pair = (user["zodiac"], candidate["zodiac"])
-        zodiac_score = ZODIAC_COMPATIBILITY.get(zodiac_pair, 50)
+            # Tính điểm tương thích
+            common_interests = set(user["interests"]) & set(candidate["interests"])
+            interest_score = len(common_interests) * 15
 
-        total_score = min(100, (interest_score + zodiac_score) // 2)
+            zodiac_pair = (user["zodiac"], candidate["zodiac"])
+            zodiac_score = ZODIAC_COMPATIBILITY.get(zodiac_pair, 50)
 
-        if total_score >= min_compatibility:
-            matches.append({
-                "name": candidate["name"],
-                "score": total_score,
-                "age": candidate["age"],
-                "personality": candidate["personality"]
-            })
+            total_score = min(100, (interest_score + zodiac_score) // 2)
 
-    if not matches:
-        return f"Không tìm thấy người phù hợp với điểm tương thích >= {min_compatibility}."
+            if total_score >= min_compatibility:
+                matches.append({
+                    "name": candidate["name"],
+                    "score": total_score,
+                    "age": candidate["age"],
+                    "personality": candidate["personality"]
+                })
 
-    # Sắp xếp theo điểm giảm dần
-    matches.sort(key=lambda x: x["score"], reverse=True)
+        if not matches:
+            return f"Không tìm thấy người phù hợp với điểm tương thích >= {min_compatibility}."
 
-    result = f"🔍 Tìm thấy {len(matches)} người phù hợp với {user['name']}:\n"
-    for i, match in enumerate(matches, 1):
-        result += f"   {i}. {match['name']} ({match['age']} tuổi) - Điểm: {match['score']}/100\n"
-        result += f"      Tính cách: {match['personality']}\n"
+        # Sắp xếp theo điểm giảm dần
+        matches.sort(key=lambda x: x["score"], reverse=True)
 
-    return result.strip()
+        result = f"🔍 Tìm thấy {len(matches)} người phù hợp với {user['name']}:\n"
+        for i, match in enumerate(matches, 1):
+            result += f"   {i}. {match['name']} ({match['age']} tuổi) - Điểm: {match['score']}/100\n"
+            result += f"      Tính cách: {match['personality']}\n"
+
+        return result.strip()
+    except Exception as e:
+        return f"LỖI: Xảy ra lỗi khi tìm kiếm đối tượng ({str(e)})."
 
 
 def get_relationship_advice(situation: str) -> str:
@@ -261,52 +278,55 @@ def get_relationship_advice(situation: str) -> str:
 
     Returns:
         str: Lời khuyên chi tiết về mối quan hệ
-
-    Note:
-        Tool này là read-only và không thay đổi trạng thái hệ thống
     """
-    situation_lower = situation.lower().strip()
+    try:
+        if not situation or not isinstance(situation, str):
+            situation_lower = "other"
+        else:
+            situation_lower = situation.lower().strip()
 
-    advice_database = {
-        "hẹn hò đầu tiên": (
-            "💝 Lời khuyên cho buổi hẹn đầu tiên:\n"
-            "   1. Chọn địa điểm thoải mái, không quá ồn ào\n"
-            "   2. Lắng nghe chủ động và đặt câu hỏi mở\n"
-            "   3. Ăn mặc gọn gàng, tự tin nhưng tự nhiên\n"
-            "   4. Đừng nói quá nhiều về người yêu cũ\n"
-            "   5. Kết thúc buổi hẹn đúng lúc, để lại ấn tượng tốt"
-        ),
-        "giữ lửa": (
-            "🔥 Lời khuyên để giữ lửa tình yêu:\n"
-            "   1. Dành thời gian chất lượng cho nhau mỗi tuần\n"
-            "   2. Luôn thể hiện sự quan tâm qua hành động nhỏ\n"
-            "   3. Giao tiếp cởi mở, chia sẻ cảm xúc thật\n"
-            "   4. Tạo bất ngờ và làm mới mối quan hệ\n"
-            "   5. Tôn trọng không gian riêng của nhau"
-        ),
-        "xung đột": (
-            "⚖️ Lời khuyên khi có xung đột:\n"
-            "   1. Bình tĩnh, không nói khi đang tức giận\n"
-            "   2. Lắng nghe quan điểm của người kia trước\n"
-            "   3. Tập trung vào vấn đề, không công kích cá nhân\n"
-            "   4. Tìm điểm chung và thỏa hiệp\n"
-            "   5. Xin lỗi khi sai và tha thứ chân thành"
+        advice_database = {
+            "hẹn hò đầu tiên": (
+                "💝 Lời khuyên cho buổi hẹn đầu tiên:\n"
+                "   1. Chọn địa điểm thoải mái, không quá ồn ào\n"
+                "   2. Lắng nghe chủ động và đặt câu hỏi mở\n"
+                "   3. Ăn mặc gọn gàng, tự tin nhưng tự nhiên\n"
+                "   4. Đừng nói quá nhiều về người yêu cũ\n"
+                "   5. Kết thúc buổi hẹn đúng lúc, để lại ấn tượng tốt"
+            ),
+            "giữ lửa": (
+                "🔥 Lời khuyên để giữ lửa tình yêu:\n"
+                "   1. Dành thời gian chất lượng cho nhau mỗi tuần\n"
+                "   2. Luôn thể hiện sự quan tâm qua hành động nhỏ\n"
+                "   3. Giao tiếp cởi mở, chia sẻ cảm xúc thật\n"
+                "   4. Tạo bất ngờ và làm mới mối quan hệ\n"
+                "   5. Tôn trọng không gian riêng của nhau"
+            ),
+            "xung đột": (
+                "⚖️ Lời khuyên khi có xung đột:\n"
+                "   1. Bình tĩnh, không nói khi đang tức giận\n"
+                "   2. Lắng nghe quan điểm của người kia trước\n"
+                "   3. Tập trung vào vấn đề, không công kích cá nhân\n"
+                "   4. Tìm điểm chung và thỏa hiệp\n"
+                "   5. Xin lỗi khi sai và tha thứ chân thành"
+            )
+        }
+
+        for keyword, advice in advice_database.items():
+            if keyword in situation_lower:
+                return advice
+
+        # Lời khuyên mặc định
+        return (
+            "💡 Lời khuyên chung cho mối quan hệ:\n"
+            "   1. Giao tiếp cởi mở và trung thực\n"
+            "   2. Thể hiện sự quan tâm và tôn trọng\n"
+            "   3. Duy trì sự cân bằng giữa cho và nhận\n"
+            "   4. Xây dựng lòng tin qua thời gian\n"
+            "   5. Luôn sẵn sàng học hỏi và phát triển cùng nhau"
         )
-    }
-
-    for keyword, advice in advice_database.items():
-        if keyword in situation_lower:
-            return advice
-
-    # Lời khuyên mặc định
-    return (
-        "💡 Lời khuyên chung cho mối quan hệ:\n"
-        "   1. Giao tiếp cởi mở và trung thực\n"
-        "   2. Thể hiện sự quan tâm và tôn trọng\n"
-        "   3. Duy trì sự cân bằng giữa cho và nhận\n"
-        "   4. Xây dựng lòng tin qua thời gian\n"
-        "   5. Luôn sẵn sàng học hỏi và phát triển cùng nhau"
-    )
+    except Exception as e:
+        return f"LỖI: Xảy ra lỗi khi lấy lời khuyên ({str(e)})."
 
 
 def get_zodiac_compatibility(zodiac1: str, zodiac2: str) -> str:
@@ -323,42 +343,44 @@ def get_zodiac_compatibility(zodiac1: str, zodiac2: str) -> str:
     Error Handling:
         Trả về thông báo lỗi nếu cung hoàng đạo không hợp lệ
     """
-    # Chuẩn hóa input
-    z1 = zodiac1.strip()
-    z2 = zodiac2.strip()
+    try:
+        if not zodiac1 or not isinstance(zodiac1, str) or not zodiac2 or not isinstance(zodiac2, str):
+            return "[LOI] Cung hoang dao truyen vao khong hop le."
 
-    # Kiểm tra tính hợp lệ
-    if z1 not in VALID_ZODIACS:
-        valid_list = ", ".join(sorted(VALID_ZODIACS))
-        return f"[LOI] Cung hoang dao '{zodiac1}' khong hop le. Cac cung hop le: {valid_list}"
+        z1 = zodiac1.strip()
+        z2 = zodiac2.strip()
 
-    if z2 not in VALID_ZODIACS:
-        valid_list = ", ".join(sorted(VALID_ZODIACS))
-        return f"[LOI] Cung hoang dao '{zodiac2}' khong hop le. Cac cung hop le: {valid_list}"
+        if z1 not in VALID_ZODIACS:
+            valid_list = ", ".join(sorted(VALID_ZODIACS))
+            return f"[LOI] Cung hoang dao '{zodiac1}' khong hop le. Cac cung hop le: {valid_list}"
 
-    # Tra cứu điểm tương thích
-    score = ZODIAC_COMPATIBILITY.get((z1, z2), 50)  # Default 50 nếu không có trong ma trận
+        if z2 not in VALID_ZODIACS:
+            valid_list = ", ".join(sorted(VALID_ZODIACS))
+            return f"[LOI] Cung hoang dao '{zodiac2}' khong hop le. Cac cung hop le: {valid_list}"
 
-    # Phân loại mức độ
-    if score >= 85:
-        level = "Rat cao"
-        description = "Hai cung nay co su hoa hop tuyet voi ve tinh cach va quan diem song."
-    elif score >= 75:
-        level = "Cao"
-        description = "Hai cung co nhieu diem chung va de dang hieu nhau."
-    elif score >= 60:
-        level = "Trung binh"
-        description = "Hai cung co the hop nhau neu cung no luc va thau hieu."
-    else:
-        level = "Thap"
-        description = "Hai cung co su khac biet lon, can nhieu su nhan nai va thoa hiep."
+        score = ZODIAC_COMPATIBILITY.get((z1, z2), 50)
 
-    result = f"Do tuong thich giua cung {z1} va cung {z2}:\n"
-    result += f"   - Diem so: {score}/100\n"
-    result += f"   - Muc do: {level}\n"
-    result += f"   - Phan tich: {description}"
+        if score >= 85:
+            level = "Rat cao"
+            description = "Hai cung nay co su hoa hop tuyet voi ve tinh cach va quan diem song."
+        elif score >= 75:
+            level = "Cao"
+            description = "Hai cung co nhieu diem chung va de dang hieu nhau."
+        elif score >= 60:
+            level = "Trung binh"
+            description = "Hai cung co the hop nhau neu cung no luc va thau hieu."
+        else:
+            level = "Thap"
+            description = "Hai cung co su khac biet lon, can nhieu su nhan nai va thoa hiep."
 
-    return result
+        result = f"Do tuong thich giua cung {z1} va cung {z2}:\n"
+        result += f"   - Diem so: {score}/100\n"
+        result += f"   - Muc do: {level}\n"
+        result += f"   - Phan tich: {description}"
+
+        return result
+    except Exception as e:
+        return f"[LOI] Xay ra loi khi tinh tuong thich cung hoang dao: {str(e)}"
 
 
 def get_mbti_compatibility(mbti1: str, mbti2: str) -> str:
@@ -375,42 +397,44 @@ def get_mbti_compatibility(mbti1: str, mbti2: str) -> str:
     Error Handling:
         Trả về thông báo lỗi nếu mã MBTI không hợp lệ
     """
-    # Chuẩn hóa input (uppercase)
-    m1 = mbti1.strip().upper()
-    m2 = mbti2.strip().upper()
+    try:
+        if not mbti1 or not isinstance(mbti1, str) or not mbti2 or not isinstance(mbti2, str):
+            return "[LOI] Ma MBTI truyen vao khong hop le."
 
-    # Kiểm tra tính hợp lệ
-    if m1 not in VALID_MBTI:
-        valid_list = ", ".join(sorted(VALID_MBTI))
-        return f"[LOI] Ma MBTI '{mbti1}' khong hop le. Cac ma hop le: {valid_list}"
+        m1 = mbti1.strip().upper()
+        m2 = mbti2.strip().upper()
 
-    if m2 not in VALID_MBTI:
-        valid_list = ", ".join(sorted(VALID_MBTI))
-        return f"[LOI] Ma MBTI '{mbti2}' khong hop le. Cac ma hop le: {valid_list}"
+        if m1 not in VALID_MBTI:
+            valid_list = ", ".join(sorted(VALID_MBTI))
+            return f"[LOI] Ma MBTI '{mbti1}' khong hop le. Cac ma hop le: {valid_list}"
 
-    # Tra cứu điểm tương thích
-    score = MBTI_COMPATIBILITY.get((m1, m2), 60)  # Default 60 nếu không có trong ma trận
+        if m2 not in VALID_MBTI:
+            valid_list = ", ".join(sorted(VALID_MBTI))
+            return f"[LOI] Ma MBTI '{mbti2}' khong hop le. Cac ma hop le: {valid_list}"
 
-    # Phân loại mức độ
-    if score >= 85:
-        level = "Rat cao"
-        description = "Hai kieu tinh cach nay bo sung hoan hao cho nhau, tao su can bang tuyet voi."
-    elif score >= 75:
-        level = "Cao"
-        description = "Hai kieu tinh cach co nhieu diem tuong dong va de dang ket noi."
-    elif score >= 65:
-        level = "Trung binh"
-        description = "Hai kieu tinh cach co the hoa hop neu cung no luc hieu nhau."
-    else:
-        level = "Thap"
-        description = "Hai kieu tinh cach co su khac biet dang ke, can nhieu su kien nhan."
+        score = MBTI_COMPATIBILITY.get((m1, m2), 60)
 
-    result = f"Do tuong thich MBTI giua {m1} va {m2}:\n"
-    result += f"   - Diem so: {score}/100\n"
-    result += f"   - Muc do: {level}\n"
-    result += f"   - Phan tich: {description}"
+        if score >= 85:
+            level = "Rat cao"
+            description = "Hai kieu tinh cach nay bo sung hoan hao cho nhau, tao su can bang tuyet voi."
+        elif score >= 75:
+            level = "Cao"
+            description = "Hai kieu tinh cach co nhieu diem tuong dong va de dang ket noi."
+        elif score >= 65:
+            level = "Trung binh"
+            description = "Hai kieu tinh cach co the hoa hop neu cung no luc hieu nhau."
+        else:
+            level = "Thap"
+            description = "Hai kieu tinh cach co su khac biet dang ke, can nhieu su kien nhan."
 
-    return result
+        result = f"Do tuong thich MBTI giua {m1} va {m2}:\n"
+        result += f"   - Diem so: {score}/100\n"
+        result += f"   - Muc do: {level}\n"
+        result += f"   - Phan tich: {description}"
+
+        return result
+    except Exception as e:
+        return f"[LOI] Xay ra loi khi tinh tuong thich MBTI: {str(e)}"
 
 
 # ===== DANH SÁCH CÁC TOOL ĐƯỢC ĐĂNG KÝ =====
