@@ -8,11 +8,12 @@
 
 | Vai trò (Role)                               | File đảm nhận           | Nhiệm vụ chính                                                                                          | Người đảm nhận  |
 | :-------------------------------------------- | :------------------------- | :--------------------------------------------------------------------------------------------------------- | :------------------- |
-| **Role 1: Product Architect**           | `config/test_cases.json` | Định hướng bài toán & soạn bộ câu test case                                                       | `________________` |
-| **Role 2: Tool Engineer**               | `src/tools.py`           | Định nghĩa các công cụ (Tools) cho Agent                                                             | `________________` |
-| **Role 3: Prompt Engineer**             | `src/prompts.py`         | Viết ReAct System Prompt & phanh Guardrails                                                               | `________________` |
-| **Role 4: Core Developer / Integrator** | `src/app.py`             | **Đầu mối kéo code/file của nhóm (`git pull`), Vibe Code lắp ráp thành App hoàn chỉnh** | `________________` |
-| **Role 5: Observability**               | `docs/trace_eval.md`     | Lập bảng Scoring Matrix & Soi nhật ký Trace Log                                                        | `________________` |
+| **Role 1: Product Architect**           | `config/test_cases.json` | Định hướng bài toán & soạn bộ câu test case                                                       | `Kim Mạnh Hưng - 2A202601679` |
+| **Role 2: Tool Engineer**               | `src/tools.py`           | Định nghĩa các công cụ (Tools) cho Agent                                                             | `Đinh Lê Quỳnh Phương - 2A2026018` |
+| **Role 3: Prompt Engineer**             | `src/prompts.py`         | Viết ReAct System Prompt & phanh Guardrails                                                               | `Đoàn Minh Hiếu - 2A202601733` |
+| **Role 4: Core Developer / Integrator** | `src/app.py`             | **Đầu mối kéo code/file của nhóm (`git pull`), Vibe Code lắp ráp thành App hoàn chỉnh** | `Phùng Văn Linh - 2A202601992` |
+| **Role 5A: Trace Analyst**              | `docs/trace_eval.md`     | Lập bảng Scoring Matrix & soi nhật ký Trace Log                                                        | `Nguyễn Ngọc Sơn - 2A202601948` |
+| **Role 5B: Flowchart Architect**        | `docs/hybrid_flowchart.mermaid` | Vẽ sơ đồ Hybrid Flowchart, thể hiện luồng Chatbot và ReAct Agent                              | `Lưu Quang Nhật - 2A202601920` |
 
 *Note: Nếu nhóm 6 người, Role 5 tách thành 5A (Trace Analyst) và 5B (Flowchart Architect).*
 
