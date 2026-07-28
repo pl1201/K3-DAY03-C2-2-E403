@@ -1,0 +1,96 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#d96c47', 'primaryTextColor': '#fff', 'primaryBorderColor': '#c65c3b', 'lineColor': '#aebbb4', 'secondaryColor': '#263a31', 'tertiaryColor': '#2b3832'}}}%%
+
+flowchart TD
+    %% ============================================================
+    %% 🧠 HYBRID FLOWCHART — CUPID AGENT
+    %% Phân luồng: Chatbot Path vs ReAct Agent Path
+    %% Role 5B: Lưu Quang Nhật — 2A202601920
+    %% ============================================================
+
+    START["Người dùng gửi câu hỏi"]
+    CLASSIFY{"BỘ PHÂN LOẠI CÂU HỎI<br/>(Query Classifier)"}
+
+    START --> CLASSIFY
+
+    %% ============================================================
+    %% 🟢 CHATBOT PATH (Câu hỏi đơn giản — Chỉ cần LLM)
+    %% ============================================================
+
+    CLASSIFY -- "🟢 Câu hỏi ĐƠN GIẢN<br/>(Kiến thức chung, lý thuyết,<br/>không cần tra cứu dữ liệu)" --> CB_PROMPT
+
+    CB_PROMPT["Gắn CHATBOT_BASELINE_PROMPT<br/>(src/prompts.py)"]
+    CB_LLM["Gọi LLM Provider<br/>(Gemini / OpenAI / Mock)"]
+    CB_ANSWER["Trả lời trực tiếp<br/>từ kiến thức có sẵn của LLM"]
+
+    CB_PROMPT --> CB_LLM --> CB_ANSWER
+
+    %% ============================================================
+    %% 🟡🔴 REACT AGENT PATH (Câu hỏi phức tạp — Cần gọi Tool)
+    %% ============================================================
+
+    CLASSIFY -- "🟡🔴 Câu hỏi PHỨC TẠP<br/>(Cần tra cứu hồ sơ, tính toán,<br/>gọi tool thực tế)" --> RA_PROMPT
+
+    RA_PROMPT["Gắn REACT_SYSTEM_PROMPT<br/>(src/prompts.py)"]
+    RA_THOUGHT["Thought: Suy luận<br/>bước tiếp theo cần làm"]
+    RA_ACTION["Action: Gọi Tool<br/>(get_personality_profile,<br/>calculate_compatibility,<br/>search_matches,<br/>get_relationship_advice)"]
+    RA_OBSERVATION["Observation:<br/>Nhận kết quả từ Tool<br/>(src/tools.py)"]
+    RA_CHECK{"Đủ thông tin<br/>để trả lời chưa?"}
+    RA_FINAL["Final Answer:<br/>Câu trả lời tổng hợp,<br/>cá nhân hóa từ dữ liệu thực"]
+
+    RA_PROMPT --> RA_THOUGHT
+    RA_THOUGHT --> RA_ACTION
+    RA_ACTION --> RA_OBSERVATION
+    RA_OBSERVATION --> RA_CHECK
+
+    RA_CHECK -- "Chưa đủ → Lặp lại" --> RA_THOUGHT
+    RA_CHECK -- "Đủ rồi" --> RA_FINAL
+
+    %% ============================================================
+    %% 🛡️ GUARDRAILS (Phanh an toàn)
+    %% ============================================================
+
+    GR_MAX{"GUARDRAIL 1:<br/>Đạt MAX_ITERATIONS = 5?"}
+    GR_REPEAT{"GUARDRAIL 2:<br/>Agent lặp lại<br/>cùng 1 Action?"}
+    GR_TOOL{"GUARDRAIL 3:<br/>Tool crash /<br/>User không tồn tại?"}
+    GR_TIMEOUT{"GUARDRAIL 4:<br/>Provider timeout<br/>(> 10 giây)?"}
+    FALLBACK["FALLBACK MESSAGE:<br/>Xin lỗi, yêu cầu không thể xử lý.<br/>Vui lòng thử lại."]
+
+    RA_CHECK -- "Quá 5 vòng" --> GR_MAX
+    RA_ACTION -- "Lặp Action" --> GR_REPEAT
+    RA_ACTION -- "Tool lỗi" --> GR_TOOL
+    RA_THOUGHT -- "Timeout" --> GR_TIMEOUT
+
+    GR_MAX --> FALLBACK
+    GR_REPEAT --> FALLBACK
+    GR_TOOL --> RA_OBSERVATION
+    GR_TIMEOUT --> FALLBACK
+
+    %% ============================================================
+    %% 📊 KẾT QUẢ CUỐI CÙNG
+    %% ============================================================
+
+    OUTPUT["Hiển thị kết quả<br/>trên Web UI (Mây)"]
+
+    CB_ANSWER --> OUTPUT
+    RA_FINAL --> OUTPUT
+    FALLBACK --> OUTPUT
+
+    %% ============================================================
+    %% STYLING
+    %% ============================================================
+
+    classDef startNode fill:#d96c47,stroke:#c65c3b,color:#fff,stroke-width:2px
+    classDef classifyNode fill:#4a6fa5,stroke:#3a5f95,color:#fff,stroke-width:2px
+    classDef chatbotNode fill:#2d6a4f,stroke:#1b4332,color:#fff,stroke-width:2px
+    classDef reactNode fill:#7b2cbf,stroke:#5a189a,color:#fff,stroke-width:2px
+    classDef guardNode fill:#e63946,stroke:#d62828,color:#fff,stroke-width:2px
+    classDef fallbackNode fill:#f77f00,stroke:#e36414,color:#fff,stroke-width:2px
+    classDef outputNode fill:#264653,stroke:#1d3557,color:#fff,stroke-width:2px
+
+    class START startNode
+    class CLASSIFY classifyNode
+    class CB_PROMPT,CB_LLM,CB_ANSWER chatbotNode
+    class RA_PROMPT,RA_THOUGHT,RA_ACTION,RA_OBSERVATION,RA_CHECK,RA_FINAL reactNode
+    class GR_MAX,GR_REPEAT,GR_TOOL,GR_TIMEOUT guardNode
+    class FALLBACK fallbackNode
+    class OUTPUT outputNode
