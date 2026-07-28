@@ -17,25 +17,207 @@
 
 ---
 
-## 🔍 2. SO SÁNH PHẢN HỒI (TEST CASE #3)
+## 📋 2. LOG CHATBOT BASELINE — MỐC 2 (5 TEST CASES)
 
-**Câu hỏi**: *"Thời tiết ở Hà Nội hôm nay thế nào và tôi nên mặc gì đi chơi?"*
+### TC#1 — 🟢 Đơn giản (Chỉ cần LLM)
+**Câu hỏi**: *"Làm sao để biết mình và đối phương thực sự hợp nhau, hay chỉ đang ở giai đoạn say nắng ban đầu?"*
 
-### 🤖 Chatbot Baseline:
-* **Phản hồi**: *"Tôi không có truy cập Internet thời gian thực nên không biết thời tiết hôm nay ở Hà Nội."*
-* **Nhận xét**: An toàn nhưng không giải quyết được nhu cầu thực tế của người dùng.
+**Phản hồi Chatbot** (nguyên văn):
 
-### 🧠 ReAct Agent:
-* **Thought 1**: Cần tra cứu thời tiết Hà Nội.
-* **Action 1**: `get_weather['Hà Nội']`
-* **Observation 1**: `Thời tiết Hà Nội: 28°C, Nắng nhẹ, Độ ẩm 65%.`
-* **Thought 2**: Đã có thông tin 28°C nắng nhẹ, đưa ra lời khuyên trang phục.
-* **Final Answer**: *"Thời tiết Hà Nội hôm nay 28°C, nắng nhẹ. Bạn nên mặc quần áo thoáng mát!"*
-* **Nhận xét**: Hoàn thành xuất sắc nhiệm vụ nhờ sự kết hợp giữa suy luận và công cụ.
+> Để phân biệt giữa việc thực sự hợp nhau và chỉ đang ở giai đoạn say nắng ban đầu, bạn có thể xem xét một số dấu hiệu sau:
+>
+> 1. **Hiểu biết và Chấp nhận:** Nếu cả hai bên sẵn lòng chấp nhận và tôn trọng ưu điểm và khuyết điểm của nhau, đó là dấu hiệu tốt của sự hòa hợp. Tình cảm lâu bền thường vượt qua được những khó khăn thường ngày.
+>
+> 2. **Giao tiếp:** Khả năng trò chuyện cởi mở và trung thực về mọi thứ, từ những điều nhỏ nhặt đến những vấn đề lớn, là một yếu tố quan trọng. Nếu bạn cảm thấy hoàn toàn thoải mái khi nói chuyện với đối phương về bất cứ điều gì, đó có thể là dấu hiệu cho thấy sự kết nối mạnh mẽ.
+>
+> 3. **Giá trị và Mục tiêu:** Kiểm tra xem cả hai có những giá trị và mục tiêu sống tương tự hay không. Điều này không có nghĩa là mọi thứ phải hoàn toàn giống nhau, nhưng có sự tương đồng trong cách nhìn nhận những điều quan trọng có thể giúp mối quan hệ bền vững hơn.
+>
+> 4. **Cảm giác về tương lai:** Khi nghĩ về tương lai, bạn có thấy đối phương là một phần trong bản kế hoạch của mình không? Nếu cả hai đều cảm thấy như vậy và muốn cùng nhau trải qua những chương mới của cuộc đời, đó có thể là dấu hiệu của một mối quan hệ tiềm năng lâu dài.
+>
+> 5. **Xử lý mâu thuẫn:** Cách các bạn xử lý sự bất đồng cũng là một yếu tố quan trọng. Một cặp đôi hòa hợp thường có thể giải quyết mâu thuẫn một cách lành mạnh và học hỏi từ những cuộc tranh luận.
+>
+> Nếu bạn nhận thấy rằng phần lớn những điều trên đều tích cực, có khả năng mối quan hệ của bạn không chỉ dừng lại ở giai đoạn say nắng ban đầu. Tuy nhiên, thời gian sẽ là thước đo chính xác nhất để xem xét sự phát triển của một mối quan hệ. Hãy kiên nhẫn và cho cả hai thời gian để thực sự hiểu rõ về nhau.
 
-> ⚠️ Ví dụ trên dùng đề tài boilerplate (thời tiết) từ trước khi nhóm chốt
-> chủ đề Cupid Agent, giữ lại để tham khảo định dạng. Trace log thật của
-> Cupid Agent (đúng chủ đề, đúng tool/data hiện có) nằm ở mục 3-4 dưới đây.
+**Phân loại**: ✅ **correct** — Trả lời đúng từ kiến thức có sẵn, không cần tool, không bịa dữ liệu cụ thể. tool_calls = 0.
+
+---
+
+### TC#2 — 🟢 Đơn giản (Chỉ cần LLM)
+**Câu hỏi**: *"MBTI là gì và nó thường được dùng thế nào để tìm hiểu tính cách của một người?"*
+
+**Phản hồi Chatbot** (nguyên văn):
+
+> MBTI, viết tắt của Myers-Briggs Type Indicator, là một công cụ đánh giá tâm lý được phát triển dựa trên lý thuyết phân loại tính cách của Carl Jung. MBTI phân loại con người thành 16 kiểu tính cách khác nhau, dựa trên bốn cặp tiêu chí:
+>
+> 1. **Hướng ngoại (Extraversion - E) vs. Hướng nội (Introversion - I):** Điều này thể hiện cách bạn tương tác với thế giới xung quanh, bạn có xu hướng thu năng lượng từ người khác (hướng ngoại) hay từ bản thân (hướng nội).
+>
+> 2. **Giác quan (Sensing - S) vs. Trực giác (Intuition - N):** Cách bạn thu thập và xử lý thông tin. Bạn có thiên hướng quan tâm đến các chi tiết và thực tế (giác quan) hay bạn chú trọng vào bức tranh tổng thể và các khả năng tương lai (trực giác).
+>
+> 3. **Lý trí (Thinking - T) vs. Cảm xúc (Feeling - F):** Cách bạn đưa ra quyết định, dựa trên lý luận logic và khách quan (lý trí) hoặc trên cơ sở giá trị cá nhân và cảm xúc (cảm xúc).
+>
+> 4. **Nguyên tắc (Judging - J) vs. Linh hoạt (Perceiving - P):** Phong cách sống của bạn, có kế hoạch và tổ chức (nguyên tắc) hay tự phát và linh hoạt (linh hoạt).
+>
+> MBTI thường được sử dụng trong nhiều lĩnh vực như tuyển dụng, tư vấn nghề nghiệp, cải thiện giao tiếp nhóm, và phát triển cá nhân. Nó giúp mọi người hiểu hơn về bản thân, từ đó cải thiện quan hệ với người khác bằng cách nhận thức và tôn trọng sự khác biệt trong tính cách. Mặc dù MBTI là công cụ phổ biến để tìm hiểu và phát triển cá nhân, cần nhớ rằng đây không phải là một lý thuyết khoa học chính xác mà chỉ là một công cụ tự đánh giá hữu ích.
+
+**Phân loại**: ✅ **correct** — Điểm cộng: Chatbot chủ động nêu giới hạn khoa học của MBTI mà không cần hỏi. tool_calls = 0.
+
+---
+
+### TC#3 — 🟡 Multi-step (Cần 1 Tool)
+**Câu hỏi**: *"Tôi là tien. Tính độ tương thích giữa tôi và hai giúp tôi."*
+
+**Phản hồi Chatbot** (nguyên văn):
+
+> Xin chào Tiến! Mặc dù tôi không có thông tin cụ thể về bạn và đối tác của bạn, tôi có thể giúp bạn tìm hiểu về độ tương thích trong mối quan hệ bằng cách xem xét một số yếu tố quan trọng. Dưới đây là một số tiêu chí giúp bạn đánh giá:
+>
+> 1. **Giao tiếp**: Khả năng lắng nghe và thấu hiểu nhau quan trọng để giải quyết mọi xung đột và hiểu rõ nhu cầu, mong muốn của đối phương.
+>
+> 2. **Giá trị và Mục tiêu sống**: Sự tương thích trong các giá trị đạo đức, tôn giáo, và mục tiêu trong đời sống sẽ giúp cả hai hướng tới cùng một hướng dài hạn.
+>
+> 3. **Sở thích chung và Đam mê**: Có một số sở thích chung giúp gia tăng sự kết nối và tạo cơ hội để dành thời gian chất lượng bên nhau.
+>
+> 4. **Cảm xúc ổn định**: Khả năng hỗ trợ và hiểu rõ cảm xúc của nhau giúp mối quan hệ thêm bền vững.
+>
+> 5. **Tính cách và Cách ứng xử**: Tính cách và cách cư xử ảnh hưởng lớn đến độ hài lòng trong mối quan hệ, biết điều chỉnh và chấp nhận những khác biệt rất quan trọng.
+>
+> Tuy nhiên, để có một cái nhìn rõ ràng hơn, việc nói chuyện, chia sẻ và thậm chí tìm hiểu nhau thông qua những trải nghiệm sẽ giúp bạn có những đánh giá chính xác nhất. Chúc bạn và đối tác có mối quan hệ tốt đẹp và hạnh phúc!
+
+**Phân loại**: ⚠️ **safe fallback** — Chatbot thừa nhận không có data cụ thể, từ chối bịa điểm số. Tuy nhiên câu trả lời chung chung, **không giải quyết được nhu cầu thực tế** (đáp án đúng: tien–hai = 66/100 theo database thật). tool_calls = 0.
+
+---
+
+### TC#4 — 🟡 Multi-step (Cần 2 Tools)
+**Câu hỏi**: *"Tôi là tien. Xem hồ sơ của tôi, sau đó tìm giúp tôi những người có độ tương thích tối thiểu 60 điểm."*
+
+**Phản hồi Chatbot** (nguyên văn):
+
+> Xin chào Tiên! Rất tiếc, tôi không thể truy cập thông tin hồ sơ của bạn hoặc dữ liệu cụ thể để thực hiện phân tích độ tương thích. Tuy nhiên, tôi có thể đưa ra một số lời khuyên chung về cách tìm người có độ tương thích cao với bạn.
+>
+> 1. **Xác định giá trị và sở thích cá nhân**: Hãy tự hỏi điều gì là quan trọng với bạn trong một mối quan hệ và tìm kiếm người có những giá trị tương tự.
+>
+> 2. **Giao tiếp và thấu hiểu**: Sự tương hợp thường bắt đầu từ việc giao tiếp tốt. Hãy lắng nghe và chia sẻ để hiểu hơn về đối phương.
+>
+> 3. **Chia sẻ sở thích chung**: Tham gia các hoạt động hoặc nhóm có chung sở thích với bạn để gặp gỡ những người có điểm chung.
+>
+> 4. **Linh hoạt và cởi mở**: Đôi khi những người hợp nhất không phải là người bạn mong chờ. Hãy mở lòng để cho cả hai có cơ hội tìm hiểu nhau.
+>
+> Hãy cố gắng tạo ra những mối quan hệ chân thành và ý nghĩa, bạn sẽ dễ dàng tìm thấy những người tương thích với mình. Chúc bạn may mắn trong hành trình tìm kiếm đối tượng phù hợp!
+
+**Phân loại**: ⚠️ **safe fallback** — Thừa nhận rõ ràng không thể truy cập hồ sơ. Không bịa danh sách người. Nhưng **hoàn toàn vô dụng** với yêu cầu cụ thể (đáp án đúng: chỉ 1 người — Hai — đạt ngưỡng 60 điểm). tool_calls = 0.
+
+---
+
+### TC#5 — 🔴 Edge Case (Bẫy Guardrail)
+**Câu hỏi**: *"Phân tích độ tương thích giữa cung 'Người Dơi' và kiểu tính cách MBTI 'XYZQ123' giúp tôi."*
+
+**Phản hồi Chatbot** (nguyên văn):
+
+> Tôi hiểu rằng bạn đang muốn làm một so sánh thú vị giữa cung hoàng đạo "Người Dơi" và kiểu tính cách MBTI "XYZQ123"! Tuy những yếu tố này không có thật trong các hệ thống chiêm tinh và tâm lý học quen thuộc, tôi cũng có thể cung cấp cho bạn một hướng tiếp cận tổng quát về cách xem xét độ tương thích trong các mối quan hệ.
+>
+> 1. **Sự Cởi Mở và Hiểu Biết**: Quan trọng là cả hai bên đều sẵn sàng lắng nghe và thấu hiểu lẫn nhau. Điều này giúp xây dựng một nền tảng vững chắc và tạo ra môi trường mà cả hai đều cảm thấy được tôn trọng.
+>
+> 2. **Giá Trị và Mục Tiêu Chung**: Để có sự tương thích tốt, cả hai người nên chia sẻ một số giá trị và mục tiêu chung. Điều này không có nghĩa là mọi thứ phải giống nhau, nhưng có một vài điểm kết nối sẽ giúp các bạn dễ dàng đi cùng nhau hơn.
+>
+> 3. **Khả Năng Thích Nghi**: Một điều quan trọng khác là khả năng thích nghi. Trong mối quan hệ, bất đồng ý kiến và xung đột là điều không thể tránh khỏi, do đó, khả năng giao tiếp và giải quyết vấn đề là rất quan trọng.
+>
+> 4. **Tính Cách Bổ Trợ**: Đôi khi, những sự khác biệt lại là điều giúp bổ trợ cho nhau. Ví dụ, một người hay hoạt động có thể cần một đối tác biết cách giúp họ thư giãn, và ngược lại.
+>
+> Dù không thể phân tích hai khái niệm giả định này một cách cụ thể, nhưng hy vọng rằng một số hướng dẫn chung trên có thể giúp ích cho bạn trong việc tìm kiếm và xây dựng mối quan hệ lành mạnh. Nếu bạn có những câu chuyện hay tình huống cụ thể hơn, tôi rất hân hạnh được lắng nghe và tư vấn thêm!
+
+**Phân loại**: ⚠️ **safe fallback** — Nhận biết "Người Dơi" và "XYZQ123" không có thật, không bịa điểm số. Tuy nhiên vẫn cố trả lời mơ hồ bằng các tiêu chí chung thay vì từ chối thẳng. tool_calls = 0.
+
+---
+
+### 📊 Bảng Tổng Kết Mốc 2
+
+| # | Loại | Phân loại | Gọi Tool? | Nhận xét |
+| :---: | :--- | :---: | :---: | :--- |
+| 1 | 🟢 Đơn giản | ✅ correct | 0 | Trả lời đúng, có chiều sâu |
+| 2 | 🟢 Đơn giản | ✅ correct | 0 | Tự thêm disclaimer MBTI — điểm cộng |
+| 3 | 🟡 Multi-step | ⚠️ safe fallback | 0 | Thừa nhận không có data, nhưng vô dụng với yêu cầu thực tế |
+| 4 | 🟡 Multi-step | ⚠️ safe fallback | 0 | Từ chối đúng nhưng không giải quyết được nhu cầu |
+| 5 | 🔴 Edge Case | ⚠️ safe fallback | 0 | Không bịa điểm số, nhưng vẫn trả lời mơ hồ |
+
+**Kết luận Mốc 2**: Chatbot Baseline hoạt động tốt với câu hỏi lý thuyết (TC#1, #2), nhưng **thất bại hoàn toàn** với các yêu cầu cần dữ liệu thực tế (TC#3, #4, #5). Đây chính xác là lý do bài toán Cupid Agent **cần ReAct Agent** với Tools thật.
+
+---
+
+## 🔁 3. TRACE LOG REACT AGENT — MỐC 3
+
+> ⏳ **Chờ test thật** — Mục này sẽ được điền sau khi Role 4 lắp xong ReAct Agent Loop và nhóm chạy thử nghiệm thực tế.
+>
+> Nội dung cần ghi: chuỗi `Thought → Action → Observation` thật từ terminal output cho từng Test Case.
+
+---
+
+## 🛡️ 4. KIỂM TRA GUARDRAIL — MỐC 3 (TC#5 Edge Case)
+
+> ⏳ **Chờ test thật** — Mục này sẽ được điền sau khi chạy TC#5 trên ReAct Agent thật.
+>
+> Nội dung cần ghi: Agent có bịa điểm số không? Dừng đúng `MAX_ITERATIONS` chưa? So sánh Before/After nếu có nâng cấp Agent V2.
+
+
+*Chế độ: ☁ Trò chuyện — LLM thuần, tool_calls = 0, không truy cập database.*
+*Provider: Gemini (`gemini-2.0-flash`) · Thời gian: 2026-07-28*
+
+---
+
+### TC#1 — 🟢 Đơn giản (Chỉ cần LLM)
+**Câu hỏi**: *"Làm sao để biết mình và đối phương thực sự hợp nhau, hay chỉ đang ở giai đoạn say nắng ban đầu?"*
+
+**Phản hồi Chatbot**: Đưa ra 5 tiêu chí cụ thể: Hiểu biết & Chấp nhận, Giao tiếp, Giá trị & Mục tiêu, Cảm giác về tương lai, Xử lý mâu thuẫn. Lưu ý thêm "thời gian là thước đo chính xác nhất".
+
+**Phân loại**: ✅ **correct** — Trả lời đúng từ kiến thức có sẵn, không cần tool, không bịa dữ liệu cụ thể.
+
+---
+
+### TC#2 — 🟢 Đơn giản (Chỉ cần LLM)
+**Câu hỏi**: *"MBTI là gì và nó thường được dùng thế nào để tìm hiểu tính cách của một người?"*
+
+**Phản hồi Chatbot**: Giải thích đầy đủ 4 cặp tiêu chí MBTI (E/I, S/N, T/F, J/P), nêu các lĩnh vực ứng dụng. Tự chủ động thêm disclaimer: *"MBTI không phải là một lý thuyết khoa học chính xác mà chỉ là công cụ tự đánh giá hữu ích"*.
+
+**Phân loại**: ✅ **correct** — Điểm cộng: Chatbot chủ động nêu giới hạn khoa học của MBTI mà không cần hỏi.
+
+---
+
+### TC#3 — 🟡 Multi-step (Cần 1 Tool)
+**Câu hỏi**: *"Tôi là tien. Tính độ tương thích giữa tôi và hai giúp tôi."*
+
+**Phản hồi Chatbot**: *"Mặc dù tôi không có thông tin cụ thể về bạn và đối tác..."* → Đưa ra 5 tiêu chí đánh giá tương thích chung (giao tiếp, giá trị, sở thích, cảm xúc, tính cách). Không đưa ra điểm số nào.
+
+**Phân loại**: ⚠️ **safe fallback** — Chatbot thừa nhận không có data, từ chối bịa điểm số. Tuy nhiên câu trả lời chung chung, **không giải quyết được nhu cầu thực tế** (điểm tương thích tien-hai là 66/100 theo database thật).
+
+---
+
+### TC#4 — 🟡 Multi-step (Cần 2 Tools)
+**Câu hỏi**: *"Tôi là tien. Xem hồ sơ của tôi, sau đó tìm giúp tôi những người có độ tương thích tối thiểu 60 điểm."*
+
+**Phản hồi Chatbot**: *"Rất tiếc, tôi không thể truy cập thông tin hồ sơ của bạn hoặc dữ liệu cụ thể..."* → Đưa ra 4 lời khuyên chung về cách tìm người phù hợp.
+
+**Phân loại**: ⚠️ **safe fallback** — Thừa nhận rõ ràng không thể truy cập hồ sơ. Không bịa danh sách người. Nhưng **hoàn toàn vô dụng** với yêu cầu cụ thể (đáp án đúng: chỉ có 1 người — Hai — đạt ngưỡng 60 điểm).
+
+---
+
+### TC#5 — 🔴 Edge Case (Bẫy Guardrail)
+**Câu hỏi**: *"Phân tích độ tương thích giữa cung 'Người Dơi' và kiểu tính cách MBTI 'XYZQ123' giúp tôi."*
+
+**Phản hồi Chatbot**: Nhận biết "Người Dơi" và "XYZQ123" không có thật, nhưng vẫn đưa ra 4 tiêu chí tương thích chung. Không bịa điểm số cho các khái niệm giả.
+
+**Phân loại**: ⚠️ **safe fallback** — Không bịa điểm số (tốt), nhưng vẫn cố trả lời mơ hồ thay vì từ chối thẳng. Đây là "hallucination nhẹ" về mặt ý định.
+
+---
+
+### 📊 Bảng Tổng Kết Mốc 2
+
+| # | Loại | Phân loại | Gọi Tool? | Nhận xét |
+| :---: | :--- | :---: | :---: | :--- |
+| 1 | 🟢 Đơn giản | ✅ correct | 0 | Trả lời đúng, có chiều sâu |
+| 2 | 🟢 Đơn giản | ✅ correct | 0 | Tự thêm disclaimer MBTI — điểm cộng |
+| 3 | 🟡 Multi-step | ⚠️ safe fallback | 0 | Thừa nhận không có data, nhưng vô dụng |
+| 4 | 🟡 Multi-step | ⚠️ safe fallback | 0 | Từ chối đúng nhưng không giải quyết nhu cầu |
+| 5 | 🔴 Edge Case | ⚠️ safe fallback | 0 | Không bịa điểm, nhưng vẫn trả lời mơ hồ |
+
+**Kết luận Mốc 2**: Chatbot Baseline hoạt động tốt với câu hỏi lý thuyết (TC#1, #2), nhưng **thất bại hoàn toàn** với các yêu cầu cần dữ liệu thực tế (TC#3, #4, #5). Đây chính xác là lý do bài toán Cupid Agent **cần ReAct Agent** với Tools thật.
 
 ---
 
