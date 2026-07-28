@@ -132,12 +132,75 @@ class OpenRouterProvider(BaseLLMProvider):
 
 
 class MockProvider(BaseLLMProvider):
-    """Offline Mock Provider (Cho bài test không cần kết nối API)"""
+    """Offline Mock Provider (Cho bài test không cần kết nối API).
+
+    CHỈ mô phỏng kịch bản cho 5 test case chính thức trong
+    config/test_cases.json, để demo được vòng lặp ReAct thật trong app.py
+    khi không có API key. Đây KHÔNG phải NLU thật — nếu câu hỏi lệch khỏi
+    5 kịch bản này, provider sẽ trả lời chung chung (không gọi tool) thay vì
+    đoán mò. `prompt` mỗi lần gọi chứa TOÀN BỘ scratchpad tích luỹ (câu hỏi
+    gốc + mọi Observation trước đó), nên có thể đếm số 'Observation:' để biết
+    đang ở bước nào trong chuỗi nhiều-tool.
+    """
     def generate(self, prompt: str, system_prompt: str = "") -> str:
         text = prompt.lower()
-        if "thời tiết" in text and "hà nội" in text:
-            return "Thought: Cần tra cứu thời tiết Hà Nội.\nAction: get_weather['Hà Nội']"
-        return "🤖 [Mock Provider]: Phản hồi giả lập offline cho bài test."
+        observation_count = prompt.count("Observation:")
+
+        # Test case 3: "Tôi là tien. Tính độ tương thích giữa tôi và hai..."
+        if "tien" in text and "hai" in text and "tương thích" in text and observation_count == 0:
+            return (
+                "Thought: Cần tính độ tương thích giữa tien và hai.\n"
+                "Action: calculate_compatibility['tien', 'hai']"
+            )
+
+        # Test case 4, bước 1: "Xem hồ sơ của tôi, sau đó tìm giúp tôi..."
+        if "xem hồ sơ" in text and "tien" in text and observation_count == 0:
+            return (
+                "Thought: Cần xem hồ sơ của tien trước.\n"
+                "Action: get_personality_profile['tien']"
+            )
+        # Test case 4, bước 2: đã có hồ sơ, giờ tìm ứng viên.
+        if "tim" in text.replace("tìm", "tim") or "tìm" in text:
+            if "tien" in text and observation_count == 1:
+                return (
+                    "Thought: Đã có hồ sơ, giờ tìm người phù hợp từ 60 điểm trở lên.\n"
+                    "Action: search_matches['tien', 60]"
+                )
+
+        # Test case 5 (bẫy Guardrail): cung/MBTI không hợp lệ.
+        if "người dơi" in text and observation_count == 0:
+            return (
+                "Thought: Cần kiểm tra độ hợp của cung 'Người Dơi'.\n"
+                "Action: get_zodiac_compatibility['Người Dơi', 'Bọ Cạp']"
+            )
+        if "người dơi" in text and observation_count == 1:
+            return (
+                "Thought: Cung không hợp lệ, thử kiểm tra MBTI XYZQ123.\n"
+                "Action: get_mbti_compatibility['XYZQ123', 'INTJ']"
+            )
+        if "người dơi" in text and observation_count >= 2:
+            return (
+                "Thought: Cả hai tool đều báo dữ liệu không hợp lệ, không thể "
+                "tính toán tiếp.\n"
+                "Final Answer: Xin lỗi, 'Người Dơi' không phải cung hoàng đạo hợp "
+                "lệ và 'XYZQ123' không phải mã MBTI hợp lệ, nên tôi không thể "
+                "đưa ra điểm tương thích cho cặp này."
+            )
+
+        # Đã có ít nhất 1 Observation cho các kịch bản khác -> tổng hợp luôn.
+        if observation_count >= 1:
+            return (
+                "Thought: Đã có đủ dữ liệu từ Observation ở trên.\n"
+                "Final Answer: (Mock) Đã tổng hợp xong kết quả từ dữ liệu thật "
+                "phía trên Observation, không bịa thêm thông tin."
+            )
+
+        # Test case 1-2 (và mọi câu hỏi lý thuyết khác): không cần tool.
+        return (
+            "Thought: Câu hỏi này là kiến thức chung, không cần tra cứu dữ liệu.\n"
+            "Final Answer: (Mock) Đây là câu trả lời từ kiến thức có sẵn, không "
+            "cần gọi tool."
+        )
 
 
 def get_llm_provider(provider_name: str = None) -> BaseLLMProvider:

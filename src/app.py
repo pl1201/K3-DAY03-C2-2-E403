@@ -1,7 +1,10 @@
 """Khung web UI tối giản cho trợ lý AI, chạy hoàn toàn từ file app.py."""
 
+import ast
+import concurrent.futures
 import json
 import os
+import re
 import sys
 import threading
 import webbrowser
@@ -15,13 +18,29 @@ ROOT_DIR = os.path.dirname(SRC_DIR)
 if SRC_DIR not in sys.path:
     sys.path.append(SRC_DIR)
 
-from tools import (
-    get_personality_profile,
-    get_relationship_advice,
+from tools import AVAILABLE_TOOLS  # noqa: E402
+from prompts import (  # noqa: E402
+    CHATBOT_BASELINE_PROMPT,
+    GUARDRAIL_FALLBACK_MESSAGE,
+    MAX_ITERATIONS,
+    REACT_SYSTEM_PROMPT,
+    TIMEOUT_SECONDS,
 )
-from prompts import CHATBOT_BASELINE_PROMPT, MAX_ITERATIONS  # noqa: E402
+from providers import get_llm_provider  # noqa: E402
 
 load_dotenv()
+
+# Một provider dùng chung cho cả server — get_llm_provider() đọc biến môi
+# trường LLM_PROVIDER một lần khi module này được nạp (khi chạy `python
+# src/app.py`). Đổi provider yêu cầu khởi động lại server, chấp nhận được
+# cho phạm vi bài lab.
+PROVIDER = get_llm_provider()
+
+# Nhận diện "Action: ten_tool[tham_so]" trên MỘT dòng — tránh nuốt nhầm nội
+# dung nhiều dòng nếu model lỡ viết thêm giải thích phía sau.
+_ACTION_PATTERN = re.compile(r"Action:\s*(\w+)\s*\[(.*?)\]\s*$", re.MULTILINE)
+_FINAL_ANSWER_PATTERN = re.compile(r"Final Answer:\s*(.*)", re.DOTALL)
+_THOUGHT_PATTERN = re.compile(r"Thought:\s*(.*?)(?:\n(?:Action|Final Answer):|\Z)", re.DOTALL)
 
 
 def load_test_cases():
@@ -36,16 +55,130 @@ def run_baseline_chatbot(user_query, provider):
     return provider.generate(user_query, system_prompt=CHATBOT_BASELINE_PROMPT)
 
 
+def _parse_tool_args(raw_args):
+    """Phân tích chuỗi bên trong Action[...] thành list tham số Python an toàn.
+
+    Dùng ast.literal_eval (không phải eval) nên không có rủi ro thực thi mã
+    tuỳ ý dù nội dung đến từ LLM. Nếu model quên quote (viết Action: f[minh]
+    thay vì f['minh']), fallback coi cả chuỗi là 1 tham số string thô.
+    """
+    raw_args = raw_args.strip()
+    if not raw_args:
+        return []
+    try:
+        parsed = ast.literal_eval(f"[{raw_args}]")
+    except (ValueError, SyntaxError):
+        return [raw_args.strip("'\" ")]
+    return list(parsed) if isinstance(parsed, (list, tuple)) else [parsed]
+
+
+def _call_tool(action_name, args):
+    """Gọi tool theo tên. KHÔNG BAO GIỜ để exception lọt ra ngoài vòng lặp.
+
+    Đây là phanh guardrail thứ hai độc lập với tools.py: kể cả nếu một tool
+    tự crash (vd. truyền sai kiểu tham số), Agent vẫn tiếp tục thay vì sập.
+    """
+    tool = AVAILABLE_TOOLS.get(action_name)
+    if tool is None:
+        available = ", ".join(sorted(AVAILABLE_TOOLS))
+        return f"LỖI: Không tìm thấy tool '{action_name}'. Các tool hợp lệ: {available}."
+    try:
+        return tool(*args)
+    except Exception as exc:  # noqa: BLE001 - phòng thủ có chủ đích, xem docstring
+        return f"LỖI: Tool '{action_name}' gặp sự cố khi chạy với tham số {args}: {exc}"
+
+
+def _generate_with_timeout(provider, prompt, system_prompt, timeout_seconds):
+    """Gọi provider.generate() với giới hạn thời gian — phanh chống treo vô hạn."""
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(provider.generate, prompt, system_prompt)
+        try:
+            return future.result(timeout=timeout_seconds)
+        except concurrent.futures.TimeoutError:
+            return (
+                f"LỖI: Provider không phản hồi sau {timeout_seconds}s "
+                f"(timeout guardrail, không phải lỗi Final Answer)."
+            )
+
+
 def run_react_agent(user_query, provider):
-    """Backend ReAct demo cho Cupid Agent, sẵn sàng nối vào UI."""
+    """Vòng lặp ReAct tổng quát: Thought -> Action -> Observation -> lặp lại.
+
+    Không hardcode kịch bản cho bất kỳ câu hỏi cụ thể nào. App (không phải
+    LLM) là bên duy nhất chèn Observation, đúng "nguyên tắc bất biến #2" của
+    CODELAB.md. Có 3 lớp Guardrail độc lập:
+      1. MAX_ITERATIONS  - chặn lặp vô hạn nếu Agent không bao giờ kết luận.
+      2. repeated_action  - dừng SỚM nếu Agent lặp lại đúng 1 Action (Agent
+         "bí" và cứ thử lại y hệt) thay vì chờ hết MAX_ITERATIONS.
+      3. _call_tool try/except - tool tự crash không làm sập cả Agent.
+    """
+    scratchpad = ""
+    trace = []
+    last_action_signature = None
+
+    for step in range(1, MAX_ITERATIONS + 1):
+        prompt = user_query if not scratchpad else f"{user_query}\n\n{scratchpad}"
+        raw_response = _generate_with_timeout(
+            provider, prompt, REACT_SYSTEM_PROMPT, TIMEOUT_SECONDS
+        )
+
+        action_match = _ACTION_PATTERN.search(raw_response)
+        final_match = _FINAL_ANSWER_PATTERN.search(raw_response)
+        thought_match = _THOUGHT_PATTERN.search(raw_response)
+        thought = thought_match.group(1).strip() if thought_match else None
+
+        # Nếu cả hai xuất hiện (model lẫn lộn), ưu tiên cái đứng trước trong văn bản.
+        if final_match and (action_match is None or final_match.start() < action_match.start()):
+            answer = final_match.group(1).strip()
+            trace.append({
+                "step": step, "type": "final_answer",
+                "thought": thought, "answer": answer,
+            })
+            return {"answer": answer, "steps": trace, "stopped_reason": "final_answer"}
+
+        if action_match is None:
+            # Model không tuân thủ định dạng bắt buộc — vẫn tính 1 lượt vào
+            # MAX_ITERATIONS để không biến thành vòng lặp vô hạn trá hình.
+            trace.append({"step": step, "type": "malformed", "raw_response": raw_response})
+            scratchpad += (
+                f"\n{raw_response}\n"
+                "Observation: LỖI ĐỊNH DẠNG - Bạn PHẢI trả lời đúng mẫu "
+                "'Thought: ...' rồi 'Action: ten_tool[tham_so]' hoặc "
+                "'Thought: ...' rồi 'Final Answer: ...'.\n"
+            )
+            continue
+
+        action_name = action_match.group(1)
+        args = _parse_tool_args(action_match.group(2))
+        action_signature = (action_name, tuple(str(a) for a in args))
+
+        if action_signature == last_action_signature:
+            trace.append({
+                "step": step, "type": "guardrail_stop", "reason": "repeated_action",
+                "action": action_name, "args": args,
+            })
+            return {
+                "answer": GUARDRAIL_FALLBACK_MESSAGE,
+                "steps": trace,
+                "stopped_reason": "repeated_action",
+            }
+        last_action_signature = action_signature
+
+        observation = _call_tool(action_name, args)
+        trace.append({
+            "step": step, "type": "action", "thought": thought,
+            "action": action_name, "args": args, "observation": observation,
+        })
+        scratchpad += (
+            f"\nThought: {thought or ''}\nAction: {action_name}{args}\n"
+            f"Observation: {observation}\n"
+        )
+
+    trace.append({"step": MAX_ITERATIONS + 1, "type": "guardrail_stop", "reason": "max_iterations"})
     return {
-        "answer": get_relationship_advice("hẹn hò đầu tiên"),
-        "steps": [
-            {
-                "label": "Đọc hồ sơ",
-                "detail": get_personality_profile("minh"),
-            },
-        ][:MAX_ITERATIONS],
+        "answer": GUARDRAIL_FALLBACK_MESSAGE,
+        "steps": trace,
+        "stopped_reason": "max_iterations",
     }
 
 
@@ -161,6 +294,21 @@ HTML = r"""<!doctype html>
       flex:0 0 31px; width:31px; height:31px; display:grid; place-items:center;
       border-radius:50%; color:white; background:var(--orange); font:700 14px Georgia,serif;
     }
+    .trace {
+      margin-top:9px; border:1px solid var(--line); border-radius:11px;
+      background:var(--soft); font-size:12px; overflow:hidden;
+    }
+    .trace summary {
+      padding:8px 12px; cursor:pointer; color:var(--muted); font-weight:650;
+      list-style:none;
+    }
+    .trace summary::-webkit-details-marker { display:none; }
+    .trace-step {
+      padding:7px 12px; border-top:1px solid var(--line);
+      font-family:Consolas,"SF Mono",monospace; white-space:pre-wrap;
+      line-height:1.5; color:var(--ink);
+    }
+    .trace-step b { color:var(--orange-2); }
     .composer-wrap { padding:8px max(36px,calc((100% - 790px)/2)) 22px; }
     .composer {
       display:grid; grid-template-columns:1fr 46px; align-items:end; padding:8px 9px 8px 5px;
@@ -286,16 +434,50 @@ HTML = r"""<!doctype html>
     }
     const bubble = document.createElement('div'); bubble.className='bubble'; bubble.textContent=text;
     row.appendChild(bubble); chat.appendChild(row); chat.scrollTop=chat.scrollHeight;
+    return bubble;
   }
-  function send() {
+  function renderTrace(bubble, steps) {
+    if (!steps || !steps.length) return;
+    const box = document.createElement('details'); box.className='trace';
+    const summary = document.createElement('summary');
+    summary.textContent = '🧠 Xem ' + steps.length + ' bước suy luận (Thought → Action → Observation)';
+    box.appendChild(summary);
+    steps.forEach(step => {
+      const div = document.createElement('div'); div.className='trace-step';
+      if (step.type === 'action') {
+        div.innerHTML = '<b>Thought:</b> ' + escapeHtml(step.thought || '') +
+          '\n<b>Action:</b> ' + escapeHtml(step.action) + '(' + escapeHtml(JSON.stringify(step.args)) + ')' +
+          '\n<b>Observation:</b> ' + escapeHtml(step.observation);
+      } else if (step.type === 'final_answer') {
+        div.innerHTML = '<b>Thought:</b> ' + escapeHtml(step.thought || '') + '\n<b>Final Answer.</b>';
+      } else if (step.type === 'guardrail_stop') {
+        div.innerHTML = '<b>⛔ Guardrail:</b> dừng vì "' + escapeHtml(step.reason) + '"';
+      } else {
+        div.innerHTML = '<b>⚠ Định dạng lỗi:</b> ' + escapeHtml((step.raw_response || '').slice(0, 200));
+      }
+      box.appendChild(div);
+    });
+    bubble.parentElement.appendChild(box);
+  }
+  function escapeHtml(text) {
+    const div = document.createElement('div'); div.textContent = String(text); return div.innerHTML;
+  }
+  async function send() {
     const text=input.value.trim(); if (!text) return;
     start(text); addMessage(text,'user'); input.value=''; resize();
-    setTimeout(() => addMessage(
-      mode === 'agent'
-        ? 'Mình đã nhận yêu cầu. Khi phần AI được kết nối, các bước thực hiện sẽ xuất hiện ngay tại đây.'
-        : 'Mình đã sẵn sàng lắng nghe. Chúng ta sẽ kết nối khả năng trả lời AI ở bước tiếp theo nhé.',
-      'assistant'
-    ), 350);
+    const bubble = addMessage('Đang suy nghĩ…', 'assistant');
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({query: text, mode: mode})
+      });
+      const data = await res.json();
+      bubble.textContent = data.answer || data.error || 'Không có phản hồi từ máy chủ.';
+      if (mode === 'agent') renderTrace(bubble, data.steps);
+    } catch (err) {
+      bubble.textContent = 'Lỗi kết nối tới máy chủ: ' + err;
+    }
   }
   function renderHistory() {
     historyBox.innerHTML='';
@@ -323,6 +505,45 @@ class AppHandler(BaseHTTPRequestHandler):
         body = HTML.encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_POST(self):
+        if self.path != "/api/chat":
+            self.send_error(404)
+            return
+
+        length = int(self.headers.get("Content-Length", 0) or 0)
+        raw_body = self.rfile.read(length) if length else b""
+        try:
+            payload = json.loads(raw_body or b"{}")
+        except json.JSONDecodeError:
+            self._send_json({"error": "JSON không hợp lệ."}, status=400)
+            return
+
+        query = (payload.get("query") or "").strip()
+        mode = payload.get("mode") or "chat"
+        if not query:
+            self._send_json({"error": "Thiếu nội dung 'query'."}, status=400)
+            return
+
+        if mode == "agent":
+            result = run_react_agent(query, PROVIDER)
+            self._send_json({
+                "answer": result["answer"],
+                "steps": result["steps"],
+                "stopped_reason": result["stopped_reason"],
+            })
+        else:
+            answer = run_baseline_chatbot(query, PROVIDER)
+            self._send_json({"answer": answer, "steps": []})
+
+    def _send_json(self, payload, status=200):
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
