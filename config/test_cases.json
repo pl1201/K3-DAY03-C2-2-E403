@@ -2,31 +2,36 @@
   {
     "id": 1,
     "category": "🟢 Đơn giản (Chỉ cần LLM)",
-    "question": "Nêu 3 dấu hiệu cho thấy hai người có tính cách hợp nhau trong một mối quan hệ tình cảm.",
-    "expected_behavior": "Chatbot trả lời trực tiếp từ kiến thức có sẵn, không cần gọi tool."
+    "question": "Làm sao để biết mình và đối phương thực sự hợp nhau, hay chỉ đang ở giai đoạn say nắng ban đầu?",
+    "expected_behavior": "Chatbot trả lời trực tiếp từ kiến thức có sẵn. KHÔNG được gọi tool — câu hỏi không nhắc tới user_id hay tình huống cụ thể nào khớp với get_relationship_advice.",
+    "grading_notes": "Đạt nếu agent đi thẳng tới Final Answer. Trượt nếu gọi get_relationship_advice một cách không cần thiết."
   },
   {
     "id": 2,
     "category": "🟢 Đơn giản (Chỉ cần LLM)",
-    "question": "Trắc nghiệm tính cách MBTI là gì và nó thường được dùng thế nào để đánh giá độ hợp nhau giữa hai người?",
-    "expected_behavior": "Chatbot giải thích khái niệm MBTI từ kiến thức có sẵn, không tra cứu dữ liệu cặp đôi cụ thể nên không cần gọi tool."
+    "question": "MBTI là gì và nó thường được dùng thế nào để tìm hiểu tính cách của một người?",
+    "expected_behavior": "Chatbot giải thích khái niệm MBTI từ kiến thức có sẵn, không tra cứu cặp MBTI cụ thể nào nên không cần gọi get_mbti_compatibility.",
+    "grading_notes": "Đạt nếu không gọi tool. Điểm cộng nếu agent chủ động lưu ý MBTI có độ tin cậy khoa học hạn chế, không nên dùng làm tiêu chí quyết định duy nhất."
   },
   {
     "id": 3,
-    "category": "🟡 Multi-step (Cần Tool)",
-    "question": "Cung Sư Tử và cung Nhân Mã có hợp nhau về mặt chiêm tinh không? Điểm tương thích là bao nhiêu?",
-    "expected_behavior": "Agent gọi tool get_zodiac_compatibility('Sư Tử', 'Nhân Mã') rồi diễn giải điểm số/kết quả trả về thành lời khuyên dễ hiểu."
+    "category": "🟡 Multi-step (Cần 1 Tool)",
+    "question": "Tôi là tien. Tính độ tương thích giữa tôi và hai giúp tôi.",
+    "expected_behavior": "Agent gọi calculate_compatibility('tien', 'hai'). Theo dữ liệu thật trong data/users_realistic.json: sở thích chung là Lam vuon, Thu cong, Thoi trang (3 mục → điểm sở thích 45/100), cung Sư Tử–Nhân Mã cho điểm cung hoàng đạo 88/100, tổng điểm = min(100, (45+88)//2) = 66/100, mức 'Cao ❤️❤️'.",
+    "grading_notes": "Đạt nếu Final Answer trích đúng điểm 66/100 và nêu đúng 3 sở thích chung lấy từ Observation. Trượt nếu bịa điểm khác hoặc trả lời mà không gọi tool."
   },
   {
     "id": 4,
     "category": "🟡 Multi-step (Cần gọi 2 Tools)",
-    "question": "Tôi là INTJ, cung Bọ Cạp. Người tôi thích là ENFP, cung Sư Tử. Chúng tôi có hợp nhau theo cả tính cách MBTI lẫn cung hoàng đạo không?",
-    "expected_behavior": "Agent gọi cả get_mbti_compatibility('INTJ', 'ENFP') và get_zodiac_compatibility('Bọ Cạp', 'Sư Tử'), sau đó tổng hợp hai kết quả thành một đánh giá tương thích chung."
+    "question": "Tôi là tien. Xem hồ sơ của tôi, sau đó tìm giúp tôi những người có độ tương thích tối thiểu 60 điểm.",
+    "expected_behavior": "Agent gọi get_personality_profile('tien') rồi search_matches('tien', 60). Với ngưỡng 60, theo dữ liệu thật chỉ có đúng 1 kết quả: hai (66 điểm) — các ứng viên khác (thanh1, nhi đều 51 điểm) không đạt ngưỡng.",
+    "grading_notes": "Đạt nếu agent gọi đủ 2 tool theo đúng thứ tự hợp lý và chỉ liệt kê đúng 1 người (hai) trong kết quả cuối. Trượt nếu liệt kê thêm người không đạt ngưỡng, hoặc chỉ gọi 1 tool."
   },
   {
     "id": 5,
     "category": "🔴 Edge Case (Bẫy Guardrail)",
     "question": "Phân tích độ tương thích giữa cung 'Người Dơi' và kiểu tính cách MBTI 'XYZQ123' giúp tôi.",
-    "expected_behavior": "Tool báo lỗi vì cung hoàng đạo và mã MBTI không hợp lệ, Guardrail ngắt sau tối đa MAX_ITERATIONS bước và trả về thông báo lịch sự thay vì bịa kết quả."
+    "expected_behavior": "Agent gọi get_zodiac_compatibility('Người Dơi', ...) → nhận lỗi '[LOI] Cung hoang dao ... khong hop le'; và/hoặc get_mbti_compatibility('XYZQ123', ...) → nhận lỗi '[LOI] Ma MBTI ... khong hop le'. Guardrail phải ngắt trong giới hạn MAX_ITERATIONS và trả lời lịch sự, không tự bịa điểm tương thích.",
+    "grading_notes": "Đạt nếu agent không tự chế ra một điểm số nào cho cặp không hợp lệ này, và dừng đúng hạn thay vì lặp vô hạn thử các biến thể khác của tên cung/MBTI."
   }
 ]
