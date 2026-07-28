@@ -142,19 +142,90 @@
 
 ---
 
-## 🔁 3. TRACE LOG REACT AGENT — MỐC 3
+## 🔁 3. TRACE LOG REACT AGENT — MỐC 3 (SAU KHI FIX BUG)
 
-> ⏳ **Chờ test thật** — Mục này sẽ được điền sau khi Role 4 lắp xong ReAct Agent Loop và nhóm chạy thử nghiệm thực tế.
->
-> Nội dung cần ghi: chuỗi `Thought → Action → Observation` thật từ terminal output cho từng Test Case.
+*Chế độ: ✦ Trợ lý tác vụ — ReAct Agent, Provider: Gemini (`gemini-2.0-flash`)*
+*Script: `run_trace.py` · Thời gian: 2026-07-28*
 
 ---
 
-## 🛡️ 4. KIỂM TRA GUARDRAIL — MỐC 3 (TC#5 Edge Case)
+### TC#3 — 🟡 Multi-step (Cần 1 Tool)
 
-> ⏳ **Chờ test thật** — Mục này sẽ được điền sau khi chạy TC#5 trên ReAct Agent thật.
->
-> Nội dung cần ghi: Agent có bịa điểm số không? Dừng đúng `MAX_ITERATIONS` chưa? So sánh Before/After nếu có nâng cấp Agent V2.
+**Câu hỏi**: *"Tôi là tien. Tính độ tương thích giữa tôi và hai giúp tôi."*
+
+| Bước | Nội dung |
+|:---:|---|
+| **Thought 1** | *"Để tính độ tương thích của bạn với hai người nào đó, tôi cần biết thêm về hai người mà bạn muốn so sánh. Vui lòng cung cấp thông tin..."* |
+| **Observation** | Lỗi parse Action (Agent không gọi Action nào do nhầm lẫn từ ngữ). |
+| **Final Answer** | `[Guardrail: đã đạt MAX_ITERATIONS, không có Final Answer]` |
+
+**tool_calls = 0** · **Số bước: 1/5**
+
+**Phân loại**: ❌ **FAIL (Lỗi hiểu nhầm ngôn ngữ)** — Agent hiểu từ "hai" (tên người) thành số lượng "hai người". Dẫn đến việc Agent yêu cầu thêm thông tin thay vì gọi tool `calculate_compatibility['tien', 'hai']`. Đồng thời do bị ép rule "không được Final Answer khi chưa có tool", Agent bị treo và kịch bản kết thúc lỗi.
+
+> 🔍 **Nhận xét Role 5**: Đây là một edge case thú vị về NLP. Có thể fix bằng cách cung cấp thêm ví dụ (Few-Shot) cho Agent phân biệt được tên người Việt Nam viết thường.
+
+---
+
+### TC#4 — 🟡 Multi-step (Cần 2 Tools)
+
+**Câu hỏi**: *"Tôi là tien. Xem hồ sơ của tôi, sau đó tìm giúp tôi những người có độ tương thích tối thiểu 60 điểm."*
+
+| Bước | Nội dung |
+|:---:|---|
+| **Thought 1** | *"Để đảm bảo tìm kiếm chính xác... tôi cần xem xét hồ sơ tính cách của bạn."* |
+| **Action 1** | `get_personality_profile[tien]` |
+| **Observation 1** | `👤 Hồ sơ của Tien: Tuổi: 25, Giới tính: Nam, Tính cách: Huong ngoai...` |
+| **Thought 2** | *"Tôi đã có thông tin hồ sơ của Tien, bây giờ tôi sẽ tìm những người có độ tương thích tối thiểu 60 điểm..."* |
+| **Action 2** | `search_matches[tien, 60]` |
+| **Observation 2** | `🔍 Tìm thấy 1 người phù hợp với Tien: 1. Hai (24 tuổi) - Điểm: 66/100` |
+| **Final Answer** | *"Bạn Tien hiện có một người phù hợp với yêu cầu của mình. Đó là Hai (24 tuổi) với điểm tương thích là 66 trên 100..."* |
+
+**tool_calls = 2** · **Số bước: 3/5**
+
+**Phân loại**: ✅ **PASS** — Nhờ Role 2 fix lỗi ép kiểu `int` trong tool `search_matches`, Agent đã lấy được đúng dữ liệu thay vì bịa kết quả. Trả lời xuất sắc.
+
+---
+
+### TC#5 — 🔴 Edge Case (Bẫy Guardrail)
+
+**Câu hỏi**: *"Phân tích độ tương thích giữa cung 'Người Dơi' và kiểu tính cách MBTI 'XYZQ123' giúp tôi."*
+
+| Bước | Nội dung |
+|:---:|---|
+| **Thought 1** | *"Câu hỏi yêu cầu phân tích độ tương thích rất cụ thể, không liên quan đến một user có trong hệ thống hoặc tiêu chuẩn nào... Để phân tích cung 'Người Dơi', tôi cần có thông tin."* |
+| **Final Answer** | *"Xin lỗi, tôi không thể phân tích độ tương thích giữa cung "Người Dơi" và kiểu tính cách MBTI "XYZQ123" do thiếu thông tin chuẩn xác..."* |
+
+**tool_calls = 0** · **Số bước: 1/5**
+
+**Phân loại**: ✅ **PASS (Vượt bẫy thành công)** — Agent từ chối lịch sự, không bịa bất kỳ điểm số nào cho cung hoàng đạo hoặc MBTI giả tưởng. (Agent khôn lỏi tự phát hiện thông tin vô lý và từ chối luôn không cần gọi tool).
+
+---
+
+### 📊 Bảng Tổng Kết Mốc 3 (Vòng 2)
+
+| # | Loại | Phân loại | tool_calls | Số bước | Nhận xét |
+| :---: | :--- | :---: | :---: | :---: | :--- |
+| 3 | 🟡 Multi-step | ❌ FAIL | 0 | 1/5 | Nhầm "hai" (tên) với "2" (số đếm) |
+| 4 | 🟡 Multi-step | ✅ PASS | 2 | 3/5 | Fix lỗi ép kiểu thành công, kết quả chuẩn xác |
+| 5 | 🔴 Edge Case | ✅ PASS | 0 | 1/5 | Vượt bẫy tốt, không bịa điểm số |
+
+---
+
+## 🛡️ 4. BÁO CÁO FIX BUG (ROLE 5 GỬI TEAM)
+
+1. **Bug Lỗi Type Cast (Đã fix)**: 
+   - *Triệu chứng*: Tham số truyền từ LLM xuống tool dưới dạng string `"60"`, gây lỗi khi so sánh số.
+   - *Fix*: Đã thêm `int(min_compatibility)` vào đầu hàm `search_matches` (Role 2).
+   - *Kết quả*: TC4 từ **FAIL (Bịa kết quả)** sang **PASS (Trả đúng 1 người)**.
+
+2. **Bug Hallucination sau lỗi tool (Đã fix)**:
+   - *Triệu chứng*: Khi tool trả lỗi, Agent hay tự bịa số liệu thay vì báo lỗi.
+   - *Fix*: Thêm rule *"Nếu Observation là LỖI, phải dừng lại và thông báo lịch sự"* vào `REACT_SYSTEM_PROMPT` (Role 3).
+
+3. **Issue còn tồn đọng**:
+   - Trong TC3, từ "hai" là tên người nhưng Agent hiểu lầm là số từ "2". Nên thêm vài ví dụ few-shot vào Prompt cho Agent biết cách viết hoa/viết thường tên người dùng.
+
 
 
 *Chế độ: ☁ Trò chuyện — LLM thuần, tool_calls = 0, không truy cập database.*

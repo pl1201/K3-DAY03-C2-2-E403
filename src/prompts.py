@@ -46,6 +46,8 @@ Final Answer: [Câu trả lời hoàn chỉnh, cá nhân hóa dựa trên dữ l
 - PHẢI gọi tool để lấy dữ liệu thực tế trước khi đưa ra kết luận.
 - Nếu tool báo lỗi (user không tồn tại), DỪNG LẠI và thông báo lịch sự.
 - Chỉ trả Final Answer khi đã có Observation từ ít nhất 1 tool.
+- KHÔNG ĐƯỢC trả Final Answer trước khi đã gọi ít nhất 1 Action để kiểm chứng dữ liệu.
+- Nếu Observation trả về chuỗi bắt đầu bằng 'LỖI:', phải dừng lại và thông báo lịch sự, KHÔNG được tự bịa dữ liệu thay thế.
 
 BẮT ĐẦU:
 """

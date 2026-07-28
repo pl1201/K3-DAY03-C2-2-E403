@@ -210,6 +210,7 @@ def search_matches(user_id: str, min_compatibility: int = 60) -> str:
         Trả về thông báo lỗi nếu không tìm thấy user_id
     """
     user_id_lower = user_id.lower().strip()
+    min_compatibility = int(min_compatibility)  # Fix: ép kiểu string → int từ parser
 
     if user_id_lower not in USER_DATABASE:
         return f"LỖI: Không tìm thấy người dùng '{user_id}'."
