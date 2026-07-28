@@ -2,6 +2,17 @@
 
 *Tài liệu của Role 1 (Product Architect). Role 2/3/4/5 đọc file này để biết cần xây gì.*
 
+> ⚠️ **TÌNH TRẠNG TÍCH HỢP:** `src/tools.py` + `data/users_realistic.json` (Role 2)
+> là bản đang chạy thật trong `app.py`, dùng schema đơn giản (tên, tuổi, giới
+> tính, personality, interests, zodiac, looking_for). Bộ engine đa tầng mô tả
+> trong tài liệu này (`src/matching/`, `config/profiles.json`) là **thiết kế
+> tham khảo cho phiên bản nâng cấp**, hiện **chưa được `app.py` gọi tới**. Đọc
+> mục 6-7 để biết cách nối vào nếu nhóm quyết định nâng cấp; nếu không, coi đây
+> là tài liệu tham khảo thuật toán, không phải mô tả hệ thống hiện có.
+> `config/test_cases.json` đã được viết lại để khớp với `tools.py` thật của
+> Role 2 (`calculate_compatibility`, `search_matches`...), không phải với
+> `src/matching/`.
+
 ---
 
 ## 1. Bài toán
@@ -116,9 +127,10 @@ hoàng đạo thuần giải trí. Giữ lại vì người dùng thích, nhưng
 > khối `private` không bao giờ đi vào context của LLM, nên không có prompt nào
 > moi ra được. Đây là khác biệt giữa "dặn dò mô hình" và "bảo đảm bằng kiến trúc".
 
-## 6. API cho Role 2 (Tool Engineer)
+## 6. API của engine tham khảo (`src/matching/`, chưa nối vào `app.py`)
 
-Engine đã xong ở `src/matching/`. Role 2 chỉ cần bọc thành Tool:
+Nếu nhóm quyết định nâng cấp lên schema đa trường, đây là cách bọc thành Tool
+(xem cảnh báo ở đầu tài liệu — hiện `app.py` KHÔNG gọi các hàm này):
 
 ```python
 from matching import (
@@ -142,14 +154,28 @@ def find_matches(user_id: str, max_distance_km: int = None) -> str:
 Engine **tất định** (cùng input → cùng output) và **không gọi LLM**, nên test
 lặp lại được và nội dung người dùng nhập không bao giờ được diễn giải như chỉ thị.
 
-## 7. Hai việc cần Role 3 & Role 4 xử lý
+## 7. Việc cần Role 3 & Role 4 xử lý trên bản đang chạy thật
 
-> ⚠️ **`MAX_ITERATIONS = 3` hiện tại KHÔNG ĐỦ.** Test case #4 cần tối thiểu 4
-> lượt Action (search → nới → search → chấm). **Đề xuất Role 3 nâng lên 6.**
+> ✅ `MAX_ITERATIONS` đã được Role 3 nâng lên `5` — đủ cho 5 test case hiện tại
+> (test case #4 chỉ cần 2 lượt Action). Không cần đổi thêm.
 
-> ⚠️ **Lỗi encoding trên Windows.** `python src/app.py` sẽ crash với
-> `UnicodeEncodeError: 'charmap' codec can't encode` khi in tiếng Việt/emoji, vì
-> stdout mặc định là cp1252. Role 4 thêm vào đầu `app.py`:
+> ⚠️ **Zodiac có dấu vs không dấu — lỗi tích hợp thật, cần Role 2/3 xử lý.**
+> `tools.py` định nghĩa `VALID_ZODIACS` chỉ chứa chuỗi KHÔNG DẤU
+> (`"Su Tu"`, `"Nhan Ma"`...), nhưng docstring của chính `get_zodiac_compatibility`
+> lại ghi ví dụ CÓ DẤU (`'Sư Tử'`, `'Nhân Mã'`). Nếu người dùng hỏi bằng tiếng
+> Việt có dấu (cách hỏi tự nhiên nhất) và agent truyền thẳng chuỗi có dấu vào
+> tool, tool sẽ báo "không hợp lệ" cho một cặp cung **hợp lệ thật**. Role 3 nên
+> thêm vào system prompt: *"luôn chuẩn hoá tên cung hoàng đạo về dạng không dấu
+> trước khi gọi get_zodiac_compatibility/tra cứu"*, hoặc Role 2 sửa
+> `VALID_ZODIACS`/hàm chuẩn hoá đầu vào trong `tools.py`. Bộ test case #3-4 của
+> Role 1 né lỗi này bằng cách dùng `calculate_compatibility(user_id, user_id)`
+> thay vì gọi thẳng tên cung, nhưng lỗi vẫn tồn tại và cross-audit nhóm khác có
+> thể khai thác được ở Mốc 4.
+
+> ⚠️ **Lỗi encoding trên Windows.** `python src/app.py` có thể crash với
+> `UnicodeEncodeError: 'charmap' codec can't encode` khi in tiếng Việt/emoji nếu
+> chạy bằng `python` mặc định của Windows (stdout là cp1252). Nếu ai trong nhóm
+> gặp lỗi này, thêm vào đầu `app.py`:
 > ```python
 > import sys
 > sys.stdout.reconfigure(encoding="utf-8")
