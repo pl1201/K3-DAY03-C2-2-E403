@@ -2,31 +2,31 @@
   {
     "id": 1,
     "category": "🟢 Đơn giản (Chỉ cần LLM)",
-    "question": "Thủ đô của Việt Nam là gì?",
-    "expected_behavior": "Chatbot trả lời trực tiếp từ kiến thức có sẵn."
+    "question": "Nêu 3 dấu hiệu cho thấy hai người có tính cách hợp nhau trong một mối quan hệ tình cảm.",
+    "expected_behavior": "Chatbot trả lời trực tiếp từ kiến thức có sẵn, không cần gọi tool."
   },
   {
     "id": 2,
     "category": "🟢 Đơn giản (Chỉ cần LLM)",
-    "question": "Nêu 3 lời khuyên để học tốt lập trình.",
-    "expected_behavior": "Chatbot trả lời trực tiếp từ kiến thức có sẵn."
+    "question": "Trắc nghiệm tính cách MBTI là gì và nó thường được dùng thế nào để đánh giá độ hợp nhau giữa hai người?",
+    "expected_behavior": "Chatbot giải thích khái niệm MBTI từ kiến thức có sẵn, không tra cứu dữ liệu cặp đôi cụ thể nên không cần gọi tool."
   },
   {
     "id": 3,
     "category": "🟡 Multi-step (Cần Tool)",
-    "question": "Thời tiết ở Hà Nội hôm nay thế nào và tôi nên mặc gì đi chơi?",
-    "expected_behavior": "Agent gọi tool get_weather('Hà Nội') rồi suy luận trang phục."
+    "question": "Cung Sư Tử và cung Nhân Mã có hợp nhau về mặt chiêm tinh không? Điểm tương thích là bao nhiêu?",
+    "expected_behavior": "Agent gọi tool get_zodiac_compatibility('Sư Tử', 'Nhân Mã') rồi diễn giải điểm số/kết quả trả về thành lời khuyên dễ hiểu."
   },
   {
     "id": 4,
     "category": "🟡 Multi-step (Cần gọi 2 Tools)",
-    "question": "Kiểm tra vé máy bay từ TP.HCM đi Hà Nội ngày mai và dự báo thời tiết ở Hà Nội.",
-    "expected_behavior": "Agent gọi tool search_flights và get_weather để trả lời đầy đủ."
+    "question": "Tôi là INTJ, cung Bọ Cạp. Người tôi thích là ENFP, cung Sư Tử. Chúng tôi có hợp nhau theo cả tính cách MBTI lẫn cung hoàng đạo không?",
+    "expected_behavior": "Agent gọi cả get_mbti_compatibility('INTJ', 'ENFP') và get_zodiac_compatibility('Bọ Cạp', 'Sư Tử'), sau đó tổng hợp hai kết quả thành một đánh giá tương thích chung."
   },
   {
     "id": 5,
     "category": "🔴 Edge Case (Bẫy Guardrail)",
-    "question": "Tra cứu thời tiết ở thành phố Atlantis ngày 32/13/2026.",
-    "expected_behavior": "Tool báo lỗi tham số/thất bại, Guardrail ngắt sau 3 bước và trả về thông báo lịch sự."
+    "question": "Phân tích độ tương thích giữa cung 'Người Dơi' và kiểu tính cách MBTI 'XYZQ123' giúp tôi.",
+    "expected_behavior": "Tool báo lỗi vì cung hoàng đạo và mã MBTI không hợp lệ, Guardrail ngắt sau tối đa MAX_ITERATIONS bước và trả về thông báo lịch sự thay vì bịa kết quả."
   }
 ]
