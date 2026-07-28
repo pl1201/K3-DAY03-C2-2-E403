@@ -19,7 +19,13 @@ if sys.stdout.encoding != 'utf-8':
         pass
 
 # Import các thành phần từ file của Role 2, Role 3 & Multi-Provider Adapter
-from tools import AVAILABLE_TOOLS, get_weather, search_flights
+from tools import (
+    AVAILABLE_TOOLS,
+    get_personality_profile,
+    calculate_compatibility,
+    search_matches,
+    get_relationship_advice
+)
 from prompts import CHATBOT_BASELINE_PROMPT, REACT_SYSTEM_PROMPT, MAX_ITERATIONS
 from providers import get_llm_provider
 
@@ -53,27 +59,35 @@ def run_baseline_chatbot(user_query: str, provider):
 def run_react_agent(user_query: str, provider):
     """
     Dựng vòng lặp ReAct Agent (Thought -> Action -> Observation) có Guardrails.
+    Demo cho Cupid Agent - Trợ lý ghép đôi & phân tích độ tương thích.
     """
     print(f"\n🤖 [REACT AGENT] Câu hỏi: {user_query}")
     step = 0
-    
+
     while step < MAX_ITERATIONS:
         step += 1
         print(f"\n--- 🔄 Vòng lặp ReAct (Step {step}/{MAX_ITERATIONS}) ---")
-        
+
         if step == 1:
-            print("🧠 Thought: Câu hỏi này cần tra cứu thời tiết thời gian thực.")
-            print("🛠️ Action: get_weather['Hà Nội']")
-            
+            print("🧠 Thought: Câu hỏi này cần tra cứu hồ sơ người dùng Minh.")
+            print("🛠️ Action: get_personality_profile['minh']")
+
             # Thực thi tool
-            obs = get_weather("Hà Nội")
+            obs = get_personality_profile("minh")
             print(f"👁️ Observation: {obs}")
-            
+
         elif step == 2:
-            print("🧠 Thought: Tôi đã có thông tin thời tiết Hà Nội, giờ tôi có thể tư vấn trang phục.")
-            print("🏁 Final Answer: Thời tiết Hà Nội hôm nay 28°C, nắng nhẹ. Bạn nên mặc áo phông thoáng mát!")
+            print("🧠 Thought: Đã có hồ sơ của Minh, giờ cần lời khuyên hẹn hò đầu tiên.")
+            print("🛠️ Action: get_relationship_advice['hẹn hò đầu tiên']")
+
+            obs = get_relationship_advice("hẹn hò đầu tiên")
+            print(f"👁️ Observation: {obs}")
+
+        elif step == 3:
+            print("🧠 Thought: Tôi đã có đủ thông tin về hồ sơ Minh và lời khuyên hẹn hò.")
+            print("🏁 Final Answer: Minh là người hướng ngoại, thích phiêu lưu. Với tính cách năng động, Minh nên chọn địa điểm hẹn hò đầu tiên ở những nơi có hoạt động ngoài trời như quán cà phê view đẹp hoặc công viên. Hãy lắng nghe chủ động, thể hiện sự tự tin nhưng tự nhiên, và đừng quên tạo không khí thoải mái!")
             break
-            
+
     if step >= MAX_ITERATIONS:
         print(f"🛡️ GUARDRAIL TRIGGERED: Đã đạt giới hạn tối đa {MAX_ITERATIONS} bước. Ngắt lặp an toàn!")
 
@@ -81,21 +95,41 @@ def run_react_agent(user_query: str, provider):
 if __name__ == "__main__":
     print("==================================================")
     print("🏫 ĐẠI HỌC VINUNI - BÀI LAB 3: CHATBOT VS REACT AGENT")
+    print("💕 CHỦ ĐỀ: CUPID AGENT - TRỢ LÝ GHÉP ĐÔI & PHÂN TÍCH ĐỘ TƯƠNG THÍCH")
     print("==================================================")
-    
+
     # Khởi tạo Multi-Provider LLM Adapter (Đọc từ biến môi trường LLM_PROVIDER)
     provider = get_llm_provider()
     model_name = getattr(provider, "model_name", "Offline Mock Mode")
     print(f"🔌 LLM Provider đang hoạt động: {provider.__class__.__name__} (Model: {model_name})")
-    
+
     tests = load_test_cases()
     print(f"✅ Đã tải thành công {len(tests)} Test Cases từ config/test_cases.json\n")
-    
-    # Chạy thử câu test số 3
+
+    # Chạy thử câu test số 3 (Multi-step với Cupid Agent)
     sample_query = tests[2]["question"]
-    
+
     print("--- DEMO 1: CHẠY TRÊN CHATBOT BASELINE ---")
     run_baseline_chatbot(sample_query, provider)
-    
+
     print("\n--- DEMO 2: CHẠY TRÊN REACT AGENT ---")
     run_react_agent(sample_query, provider)
+
+    print("\n" + "="*50)
+    print("🎯 DEMO BỔ SUNG: TEST CÁC TOOLS ĐỘC LẬP")
+    print("="*50)
+
+    print("\n1️⃣ Test tool: get_personality_profile")
+    print(get_personality_profile("minh"))
+
+    print("\n2️⃣ Test tool: calculate_compatibility")
+    print(calculate_compatibility("minh", "linh"))
+
+    print("\n3️⃣ Test tool: search_matches")
+    print(search_matches("huy", min_compatibility=60))
+
+    print("\n4️⃣ Test tool: get_relationship_advice")
+    print(get_relationship_advice("hẹn hò đầu tiên"))
+
+    print("\n5️⃣ Test Edge Case - User không tồn tại:")
+    print(get_personality_profile("xyz123"))
