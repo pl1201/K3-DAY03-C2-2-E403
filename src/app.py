@@ -181,7 +181,7 @@ HTML = r"""<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mây — Trợ lý của bạn</title>
+  <title>Mây Tình Cảm — Cupid Agent</title>
   <style>
     :root {
       --ink:#1d2822; --muted:#6c7771; --paper:#f5f6f1; --white:#fff;
@@ -214,6 +214,12 @@ HTML = r"""<!doctype html>
       transition:.2s ease;
     }
     .new-chat:hover { background:var(--orange-2); transform:translateY(-1px); }
+    .profile-button {
+      margin-top:9px; border:1px solid #435149; border-radius:10px;
+      padding:12px 14px; color:#e8eee9; background:transparent;
+      text-align:left; font-weight:650; transition:.2s ease;
+    }
+    .profile-button:hover { background:var(--night-2); border-color:#607168; }
     .section-title {
       margin:27px 9px 10px; color:#84938b; font-size:10px;
       font-weight:700; letter-spacing:.12em;
@@ -252,7 +258,7 @@ HTML = r"""<!doctype html>
     .status { color:var(--muted); font-size:12px; }
     .status::before { content:""; display:inline-block; width:7px; height:7px;
       margin-right:7px; border-radius:50%; background:#7eb879; }
-    .stage { min-height:0; position:relative; }
+    .stage { min-height:0; position:relative; overflow:hidden; }
     .welcome {
       height:100%; display:flex; flex-direction:column; align-items:center;
       justify-content:center; padding-bottom:4vh;
@@ -272,12 +278,29 @@ HTML = r"""<!doctype html>
     }
     .card strong { display:block; font-size:14px; }
     .card small { display:block; margin-top:5px; color:var(--muted); }
-    .chat {
-      display:none; height:100%; overflow-y:auto; padding:35px max(35px,calc((100% - 760px)/2));
+    .trust-note {
+      display:flex; align-items:flex-start; gap:9px; max-width:600px;
+      margin-top:25px; padding:11px 14px; border-radius:12px;
+      background:#eef2e8; color:var(--muted); font-size:11px; line-height:1.5;
     }
+    .chat {
+      display:none; position:absolute; inset:0; overflow-y:auto; overflow-x:hidden;
+      padding:35px max(35px,calc((100% - 760px)/2)) 52px;
+      overscroll-behavior:contain; scrollbar-gutter:stable;
+      scroll-behavior:smooth;
+    }
+    .chat::-webkit-scrollbar { width:9px; }
+    .chat::-webkit-scrollbar-track { background:transparent; }
+    .chat::-webkit-scrollbar-thumb {
+      background:#cbd2ca; border:2px solid var(--paper); border-radius:99px;
+    }
+    .chat::-webkit-scrollbar-thumb:hover { background:#aeb9af; }
     .message { display:flex; margin-bottom:22px; animation:arrive .3s ease both; }
     .message.user { justify-content:flex-end; }
-    .bubble { max-width:75%; padding:13px 17px; border-radius:16px; line-height:1.55; font-size:14px; }
+    .bubble {
+      max-width:75%; padding:13px 17px; border-radius:16px; line-height:1.55;
+      font-size:14px; white-space:pre-wrap; overflow-wrap:anywhere;
+    }
     .user .bubble { color:white; background:#263a31; border-bottom-right-radius:4px; }
     .assistant { gap:11px; align-items:flex-start; }
     .assistant .bubble {
@@ -303,6 +326,59 @@ HTML = r"""<!doctype html>
       line-height:1.5; color:var(--ink);
     }
     .trace-step b { color:var(--orange-2); }
+    .result-card {
+      margin-top:10px; padding:13px; border-radius:12px;
+      background:linear-gradient(135deg,#fff7f2,#f1f6e9); border:1px solid #eadfd7;
+    }
+    .result-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .result-top strong { font-family:Georgia,serif; font-size:15px; }
+    .score-pill {
+      flex:0 0 auto; padding:5px 9px; border-radius:999px;
+      color:#8d3f28; background:#f7d9ce; font-size:12px; font-weight:750;
+    }
+    .result-note { margin:8px 0 0; color:var(--muted); font-size:11px; line-height:1.45; }
+    .modal {
+      position:fixed; inset:0; z-index:20; display:none; place-items:center;
+      padding:20px; background:rgba(19,30,24,.58); backdrop-filter:blur(5px);
+    }
+    .modal.open { display:grid; animation:fadeIn .2s ease; }
+    .dialog {
+      width:min(540px,100%); border-radius:20px; background:white;
+      box-shadow:0 28px 90px rgba(15,25,19,.28); overflow:hidden;
+    }
+    .dialog-head { display:flex; justify-content:space-between; padding:22px 24px 14px; }
+    .dialog-head h2 { margin:0; font:700 23px Georgia,serif; }
+    .dialog-head p { margin:6px 0 0; color:var(--muted); font-size:12px; }
+    .close {
+      width:34px; height:34px; border:0; border-radius:50%; color:var(--muted);
+      background:var(--soft); font-size:18px;
+    }
+    .progress { display:flex; gap:6px; padding:0 24px 20px; }
+    .progress span { height:4px; flex:1; border-radius:99px; background:var(--line); }
+    .progress span.active { background:var(--orange); }
+    .wizard-step { display:none; padding:0 24px 8px; }
+    .wizard-step.active { display:block; }
+    .wizard-step h3 { margin:0 0 16px; font-size:16px; }
+    .field { display:block; margin-bottom:15px; }
+    .field span { display:block; margin-bottom:7px; color:var(--muted); font-size:12px; font-weight:650; }
+    .field input,.field select {
+      width:100%; border:1px solid var(--line); border-radius:11px;
+      padding:11px 12px; outline:0; color:var(--ink); background:white;
+    }
+    .field input:focus,.field select:focus { border-color:#9daf9f; }
+    .privacy-box {
+      margin:7px 24px 0; padding:11px 13px; border-radius:11px;
+      color:#536159; background:#eef2e8; font-size:11px; line-height:1.5;
+    }
+    .dialog-actions {
+      display:flex; justify-content:space-between; gap:10px; padding:19px 24px 23px;
+    }
+    .secondary,.primary {
+      border:0; border-radius:10px; padding:10px 16px; font-weight:700;
+    }
+    .secondary { color:var(--muted); background:var(--soft); }
+    .primary { margin-left:auto; color:white; background:var(--orange); }
+    @keyframes fadeIn { from { opacity:0; } }
     .composer-wrap { padding:8px max(36px,calc((100% - 790px)/2)) 22px; }
     .composer {
       display:grid; grid-template-columns:1fr 46px; align-items:end; padding:8px 9px 8px 5px;
@@ -313,7 +389,9 @@ HTML = r"""<!doctype html>
     textarea {
       width:100%; max-height:130px; resize:none; border:0; outline:0; padding:11px 13px;
       color:var(--ink); background:transparent; line-height:1.45;
+      overflow-y:hidden; scrollbar-width:thin;
     }
+    textarea.input-scroll { overflow-y:auto; }
     textarea::placeholder { color:#8c9690; }
     .send {
       width:42px; height:42px; border:0; border-radius:11px; color:white;
@@ -325,9 +403,10 @@ HTML = r"""<!doctype html>
     @media (max-width:820px) {
       .app { grid-template-columns:76px 1fr; }
       aside { padding:22px 12px; align-items:center; }
-      .brand-copy,.new-label,.section-title,#history,.profile-copy,.online { display:none; }
+      .brand-copy,.new-label,.profile-label,.section-title,#history,.profile-copy,.online { display:none; }
       .brand { padding:0 0 24px; }
       .new-chat { width:44px; height:44px; padding:0; text-align:center; font-size:20px; }
+      .profile-button { width:44px; height:44px; padding:0; text-align:center; font-size:18px; }
       .profile { padding:18px 0 0; }
       .cards { flex-wrap:wrap; justify-content:center; }
       .card { width:165px; }
@@ -337,7 +416,6 @@ HTML = r"""<!doctype html>
     @media (max-width:560px) {
       .app { grid-template-columns:1fr; }
       aside { display:none; }
-      .cards .card:last-child { display:none; }
       .card { width:145px; }
       .welcome { justify-content:flex-start; padding-top:15vh; }
       .lead { margin-bottom:25px; text-align:center; }
@@ -349,10 +427,11 @@ HTML = r"""<!doctype html>
 <div class="app">
   <aside>
     <div class="brand">
-      <div class="logo">M</div>
-      <div class="brand-copy"><strong>Mây</strong><small>Trợ lý của bạn</small></div>
+      <div class="logo">♥</div>
+      <div class="brand-copy"><strong>Mây</strong><small>Cupid Agent</small></div>
     </div>
     <button class="new-chat" onclick="newChat()">＋ <span class="new-label">&nbsp;Cuộc trò chuyện mới</span></button>
+    <button class="profile-button" onclick="openProfile()">♡ <span class="profile-label">&nbsp;Hồ sơ của tôi</span></button>
     <div class="section-title">GẦN ĐÂY</div>
     <div id="history"><div class="history-empty">Chưa có cuộc trò chuyện</div></div>
     <div class="profile">
@@ -364,52 +443,104 @@ HTML = r"""<!doctype html>
   <main>
     <header>
       <div class="modes">
-        <button class="mode active" data-mode="chat" onclick="setMode(this)">☁&nbsp; Trò chuyện</button>
-        <button class="mode" data-mode="agent" onclick="setMode(this)">✦&nbsp; Trợ lý tác vụ</button>
+        <button class="mode active" data-mode="chat" onclick="setMode(this)">☁&nbsp; Tư vấn</button>
+        <button class="mode" data-mode="agent" onclick="setMode(this)">♥&nbsp; Ghép đôi</button>
       </div>
       <div class="status">Hệ thống sẵn sàng</div>
     </header>
     <section class="stage">
       <div class="welcome" id="welcome">
-        <h1>Chào bạn</h1>
-        <p class="lead">Hôm nay Mây có thể giúp gì cho bạn?</p>
+        <h1>Chuyện tình cảm, để Mây cùng bạn</h1>
+        <p class="lead">Tìm sự đồng điệu bằng dữ liệu, trò chuyện bằng sự thấu hiểu.</p>
         <div class="cards">
-          <button class="card" onclick="suggest('Giúp tôi lên kế hoạch cho ngày hôm nay')">
-            <span class="card-icon">✦</span><strong>Lên kế hoạch</strong><small>Sắp xếp ngày mới</small>
+          <button class="card" onclick="agentSuggest('Tìm người phù hợp với tien, điểm tương thích tối thiểu 60')">
+            <span class="card-icon">♥</span><strong>Tìm người phù hợp</strong><small>Khám phá kết nối mới</small>
           </button>
-          <button class="card" onclick="suggest('Gợi ý cho tôi vài ý tưởng mới')">
-            <span class="card-icon">◌</span><strong>Tìm ý tưởng</strong><small>Bắt đầu thật nhẹ nhàng</small>
+          <button class="card" onclick="agentSuggest('Tính độ tương thích giữa tien và hai giúp tôi')">
+            <span class="card-icon">⇄</span><strong>So sánh hồ sơ</strong><small>Nhìn rõ điểm chung</small>
           </button>
-          <button class="card" onclick="suggest('Giúp tôi so sánh hai lựa chọn')">
-            <span class="card-icon">✓</span><strong>Giúp tôi chọn</strong><small>So sánh các lựa chọn</small>
+          <button class="card" onclick="agentSuggest('Xem hồ sơ của tien và phân tích độ tương thích với hai')">
+            <span class="card-icon">✦</span><strong>Xem tương thích</strong><small>Điểm số có giải thích</small>
           </button>
+          <button class="card" onclick="suggest('Cho tôi lời khuyên để xây dựng một mối quan hệ lành mạnh')">
+            <span class="card-icon">☁</span><strong>Xin lời khuyên</strong><small>Một góc nhìn ấm áp</small>
+          </button>
+        </div>
+        <div class="trust-note">
+          <span>ⓘ</span>
+          <span>MBTI và cung hoàng đạo chỉ mang tính tham khảo. Mây không hiển thị thông tin riêng tư của người khác và không thay bạn đưa ra quyết định tình cảm.</span>
         </div>
       </div>
       <div class="chat" id="chat"></div>
     </section>
     <div class="composer-wrap">
       <div class="composer">
-        <textarea id="input" rows="1" placeholder="Hỏi Mây bất cứ điều gì..."></textarea>
+        <textarea id="input" rows="1" placeholder="Bạn muốn tìm hiểu điều gì về một kết nối?"></textarea>
         <button class="send" onclick="send()" aria-label="Gửi">➜</button>
       </div>
       <p class="hint">Enter để gửi · Shift + Enter để xuống dòng</p>
     </div>
   </main>
 </div>
+<div class="modal" id="profileModal" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+  <div class="dialog">
+    <div class="dialog-head">
+      <div><h2 id="profileTitle">Hồ sơ của bạn</h2><p>Ba bước ngắn để Mây hiểu bạn hơn</p></div>
+      <button class="close" onclick="closeProfile()" aria-label="Đóng">×</button>
+    </div>
+    <div class="progress"><span class="active"></span><span></span><span></span></div>
+    <div class="wizard-step active" data-step="0">
+      <h3>Trước tiên, một chút về bạn</h3>
+      <label class="field"><span>Tên gọi</span><input id="profileName" maxlength="30" placeholder="Ví dụ: An"></label>
+      <label class="field"><span>Tuổi</span><input id="profileAge" type="number" min="18" max="100" placeholder="Từ 18 tuổi"></label>
+    </div>
+    <div class="wizard-step" data-step="1">
+      <h3>Cách bạn nhìn về bản thân</h3>
+      <label class="field"><span>MBTI (không bắt buộc)</span>
+        <select id="profileMbti"><option value="">Chưa rõ</option><option>INTJ</option><option>INTP</option><option>ENTJ</option><option>ENTP</option><option>INFJ</option><option>INFP</option><option>ENFJ</option><option>ENFP</option><option>ISTJ</option><option>ISFJ</option><option>ESTJ</option><option>ESFJ</option><option>ISTP</option><option>ISFP</option><option>ESTP</option><option>ESFP</option></select>
+      </label>
+      <label class="field"><span>Cung hoàng đạo (không bắt buộc)</span>
+        <select id="profileZodiac"><option value="">Chưa rõ</option><option>Bạch Dương</option><option>Kim Ngưu</option><option>Song Tử</option><option>Cự Giải</option><option>Sư Tử</option><option>Xử Nữ</option><option>Thiên Bình</option><option>Bọ Cạp</option><option>Nhân Mã</option><option>Ma Kết</option><option>Bảo Bình</option><option>Song Ngư</option></select>
+      </label>
+    </div>
+    <div class="wizard-step" data-step="2">
+      <h3>Điều làm bạn thấy kết nối</h3>
+      <label class="field"><span>Sở thích</span><input id="profileInterests" maxlength="120" placeholder="Ví dụ: đọc sách, du lịch, nấu ăn"></label>
+      <label class="field"><span>Bạn đang tìm kiếm</span>
+        <select id="profileGoal"><option>Một mối quan hệ nghiêm túc</option><option>Người đồng hành phù hợp</option><option>Lời khuyên tình cảm</option><option>Mở rộng kết nối</option></select>
+      </label>
+    </div>
+    <div class="privacy-box">🔒 Thông tin này chỉ được dùng trong phiên trò chuyện hiện tại. Không nhập số điện thoại, địa chỉ hoặc thông tin nhận dạng nhạy cảm.</div>
+    <div class="dialog-actions">
+      <button class="secondary" id="backButton" onclick="wizardBack()" style="visibility:hidden">Quay lại</button>
+      <button class="primary" id="nextButton" onclick="wizardNext()">Tiếp tục</button>
+    </div>
+  </div>
+</div>
 <script>
   const input = document.querySelector('#input');
   const chat = document.querySelector('#chat');
   const welcome = document.querySelector('#welcome');
   const historyBox = document.querySelector('#history');
-  let mode = 'chat', started = false, sending = false, history = [];
+  const profileModal = document.querySelector('#profileModal');
+  let mode = 'chat', started = false, sending = false, history = [], wizardStep = 0;
 
   function setMode(button) {
     document.querySelectorAll('.mode').forEach(el => el.classList.remove('active'));
     button.classList.add('active'); mode = button.dataset.mode;
   }
   function suggest(text) { input.value = text; resize(); input.focus(); }
+  function agentSuggest(text) {
+    mode = 'agent';
+    document.querySelectorAll('.mode').forEach(el =>
+      el.classList.toggle('active', el.dataset.mode === 'agent'));
+    suggest(text);
+  }
   function resize() {
-    input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight,130)+'px';
+    input.style.height = 'auto';
+    const nextHeight = Math.min(input.scrollHeight,130);
+    input.style.height = nextHeight+'px';
+    input.classList.toggle('input-scroll', input.scrollHeight > 130);
   }
   input.addEventListener('input', resize);
   input.addEventListener('keydown', event => {
@@ -427,31 +558,53 @@ HTML = r"""<!doctype html>
       row.appendChild(logo);
     }
     const bubble = document.createElement('div'); bubble.className='bubble'; bubble.textContent=text;
-    row.appendChild(bubble); chat.appendChild(row); chat.scrollTop=chat.scrollHeight;
+    row.appendChild(bubble); chat.appendChild(row);
+    requestAnimationFrame(() => chat.scrollTo({top:chat.scrollHeight,behavior:'smooth'}));
     return bubble;
   }
   function renderTrace(bubble, steps) {
     if (!steps || !steps.length) return;
     const box = document.createElement('details'); box.className='trace';
     const summary = document.createElement('summary');
-    summary.textContent = '🧠 Xem ' + steps.length + ' bước suy luận (Thought → Action → Observation)';
+    summary.textContent = '✓ Mây đã thực hiện ' + steps.length + ' bước';
     box.appendChild(summary);
+    const actionLabels = {
+      get_personality_profile:'Đã kiểm tra hồ sơ',
+      calculate_compatibility:'Đã tính độ tương thích',
+      search_matches:'Đã tìm người phù hợp',
+      get_relationship_advice:'Đã tham khảo lời khuyên',
+      get_zodiac_compatibility:'Đã đối chiếu cung hoàng đạo',
+      get_mbti_compatibility:'Đã đối chiếu MBTI'
+    };
     steps.forEach(step => {
       const div = document.createElement('div'); div.className='trace-step';
       if (step.type === 'action') {
-        div.innerHTML = '<b>Thought:</b> ' + escapeHtml(step.thought || '') +
-          '\n<b>Action:</b> ' + escapeHtml(step.action) + '(' + escapeHtml(JSON.stringify(step.args)) + ')' +
-          '\n<b>Observation:</b> ' + escapeHtml(step.observation);
+        div.innerHTML = '<b>✓</b> ' + escapeHtml(actionLabels[step.action] || 'Đã kiểm tra thông tin');
       } else if (step.type === 'final_answer') {
-        div.innerHTML = '<b>Thought:</b> ' + escapeHtml(step.thought || '') + '\n<b>Final Answer.</b>';
+        div.innerHTML = '<b>✓</b> Đã tổng hợp kết quả';
       } else if (step.type === 'guardrail_stop') {
-        div.innerHTML = '<b>⛔ Guardrail:</b> dừng vì "' + escapeHtml(step.reason) + '"';
+        div.innerHTML = '<b>⛔</b> Đã dừng an toàn vì chưa đủ dữ liệu đáng tin cậy';
       } else {
-        div.innerHTML = '<b>⚠ Định dạng lỗi:</b> ' + escapeHtml((step.raw_response || '').slice(0, 200));
+        div.innerHTML = '<b>↻</b> Đã thử lại một bước chưa hoàn chỉnh';
       }
       box.appendChild(div);
     });
     bubble.parentElement.appendChild(box);
+    requestAnimationFrame(() => chat.scrollTo({top:chat.scrollHeight,behavior:'smooth'}));
+  }
+  function renderResult(bubble, answer) {
+    const score = String(answer).match(/(\d{1,3}(?:[.,]\d+)?)\s*\/\s*100/);
+    const card = document.createElement('div'); card.className='result-card';
+    const top = document.createElement('div'); top.className='result-top';
+    const title = document.createElement('strong'); title.textContent='Góc nhìn tương thích';
+    top.appendChild(title);
+    if (score) {
+      const pill = document.createElement('span'); pill.className='score-pill';
+      pill.textContent=score[1] + '/100'; top.appendChild(pill);
+    }
+    const note = document.createElement('p'); note.className='result-note';
+    note.textContent='Kết quả là gợi ý dựa trên dữ liệu hiện có, không phải kết luận về một mối quan hệ.';
+    card.appendChild(top); card.appendChild(note); bubble.appendChild(card);
   }
   function escapeHtml(text) {
     const div = document.createElement('div'); div.textContent = String(text); return div.innerHTML;
@@ -470,7 +623,10 @@ HTML = r"""<!doctype html>
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Không thể kết nối');
       bubble.textContent = data.answer || 'Không có phản hồi từ máy chủ.';
-      if (mode === 'agent') renderTrace(bubble, data.steps);
+      if (mode === 'agent') {
+        renderResult(bubble, data.answer);
+        renderTrace(bubble, data.steps);
+      }
     } catch (error) {
       bubble.textContent = 'Mình chưa thể trả lời lúc này. Bạn thử lại sau một chút nhé.';
       console.error(error);
@@ -489,6 +645,48 @@ HTML = r"""<!doctype html>
     started=false; chat.innerHTML=''; chat.style.display='none'; welcome.style.display='flex';
     input.value=''; resize(); input.focus();
   }
+  function openProfile() {
+    wizardStep=0; updateWizard(); profileModal.classList.add('open');
+    document.querySelector('#profileName').focus();
+  }
+  function closeProfile() { profileModal.classList.remove('open'); }
+  function updateWizard() {
+    document.querySelectorAll('.wizard-step').forEach((el,index) =>
+      el.classList.toggle('active', index === wizardStep));
+    document.querySelectorAll('.progress span').forEach((el,index) =>
+      el.classList.toggle('active', index <= wizardStep));
+    document.querySelector('#backButton').style.visibility = wizardStep ? 'visible' : 'hidden';
+    document.querySelector('#nextButton').textContent = wizardStep === 2 ? 'Hoàn tất' : 'Tiếp tục';
+  }
+  function wizardBack() { if (wizardStep > 0) { wizardStep--; updateWizard(); } }
+  function wizardNext() {
+    if (wizardStep === 0) {
+      const age=Number(document.querySelector('#profileAge').value);
+      if (!age || age < 18) {
+        document.querySelector('#profileAge').focus();
+        document.querySelector('#profileAge').setCustomValidity('Bạn cần đủ 18 tuổi để sử dụng tính năng ghép đôi.');
+        document.querySelector('#profileAge').reportValidity();
+        return;
+      }
+      document.querySelector('#profileAge').setCustomValidity('');
+    }
+    if (wizardStep < 2) { wizardStep++; updateWizard(); return; }
+    const name=document.querySelector('#profileName').value.trim() || 'mình';
+    const mbti=document.querySelector('#profileMbti').value;
+    const zodiac=document.querySelector('#profileZodiac').value;
+    const interests=document.querySelector('#profileInterests').value.trim();
+    const goal=document.querySelector('#profileGoal').value;
+    const details=[mbti && 'MBTI '+mbti,zodiac && 'cung '+zodiac,interests && 'thích '+interests]
+      .filter(Boolean).join(', ');
+    closeProfile();
+    suggest('Tôi là '+name+(details ? ', '+details : '')+'. Tôi đang tìm '+goal.toLowerCase()+'. Hãy cho tôi một gợi ý phù hợp.');
+  }
+  profileModal.addEventListener('click', event => {
+    if (event.target === profileModal) closeProfile();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeProfile();
+  });
   input.focus();
 </script>
 </body>
