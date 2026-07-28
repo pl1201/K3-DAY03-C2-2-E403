@@ -6,6 +6,8 @@
 
 ## 🎯 1. BẢNG CHẤM ĐIỂM AGENTIC FIT (SCORING MATRIX)
 
+*Đề tài: **Cupid Agent — Trợ Lý Ghép Đôi & Phân Tích Độ Tương Thích***
+
 | Tiêu chí | Điểm (1-5) | Lý do đánh giá |
 | :--- | :---: | :--- |
 | 🧠 **Multi-step Reasoning** | `5/5` | Cần tra cứu hồ sơ → Tính độ tương thích → Tìm đối tượng phù hợp → Đưa lời khuyên. |
