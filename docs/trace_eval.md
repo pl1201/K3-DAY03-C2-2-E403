@@ -8,8 +8,8 @@
 
 | Tiêu chí | Điểm (1-5) | Lý do đánh giá |
 | :--- | :---: | :--- |
-| 🧠 **Multi-step Reasoning** | `5/5` | Cần tra cứu hồ sơ → Tính độ tương thích → Tìm đối tượng phù hợp → Đưa lời khuyên. |
-| 🛠️ **Tool Interaction** | `5/5` | Cần gọi nhiều tools: get_personality_profile, calculate_compatibility, search_matches, get_relationship_advice. |
+| 🧠 **Multi-step Reasoning** | `5/5` | Cần tra cứu hồ sơ → Tính độ tương thích → Tìm đối tượng phù hợp → Đưa lời khuyên. Hoặc phân tích trực tiếp cung hoàng đạo/MBTI. |
+| 🛠️ **Tool Interaction** | `5/5` | Cần gọi 6 tools: get_personality_profile, calculate_compatibility, search_matches, get_relationship_advice, get_zodiac_compatibility, get_mbti_compatibility. |
 | 🔀 **Dynamic Decision** | `5/5` | Kết quả từ hồ sơ người dùng quyết định việc gọi tool tính tương thích và tìm kiếm đối tượng phù hợp. |
 | ⏳ **Long Horizon** | `4/5` | Quy trình ghép đôi gồm 3-4 bước, có thể mở rộng với memory để theo dõi lịch sử hẹn hò. |
 | **TỔNG ĐIỂM FIT** | **19/20** | **KẾT LUẬN: BÀI TOÁN RẤT PHÙ HỢP VỚI REACT AGENT!** ✅ |
