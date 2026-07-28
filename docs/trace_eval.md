@@ -5,13 +5,15 @@
 
 ## 🎯 1. BẢNG CHẤM ĐIỂM AGENTIC FIT (SCORING MATRIX)
 
+*Đề tài: **Cupid Agent — Trợ Lý Ghép Đôi & Phân Tích Độ Tương Thích***
+
 | Tiêu chí | Điểm (1-5) | Lý do đánh giá |
 | :--- | :---: | :--- |
-| 🧠 **Multi-step Reasoning** | `4/5` | Cần suy luận từ tra cứu thời tiết đến chọn trang phục. |
-| 🛠️ **Tool Interaction** | `5/5` | Cần tra cứu dữ liệu thời gian thực qua API thời tiết/chuyến bay. |
-| 🔀 **Dynamic Decision** | `4/5` | Kết quả bước trước quyết định hành động bước sau. |
-| ⏳ **Long Horizon** | `3/5` | Quy trình gồm 2-3 bước xử lý ngắn. |
-| **TỔNG ĐIỂM FIT** | **16/20** | **KẾT LUẬN: BÀI TOÁN RẤT NÊN DÙNG REACT AGENT!** |
+| 🧠 **Multi-step Reasoning** | `4/5` | Cần suy luận qua ≥3 bước: thu thập profile → tìm ứng viên → tính điểm tương thích → tổng hợp gợi ý. Chatbot thuần không thể thực hiện chuỗi suy luận có điều kiện này. |
+| 🛠️ **Tool Interaction** | `5/5` | Bắt buộc gọi tool thật (get_user_profile, search_compatible_profiles, calculate_compatibility_score) — Chatbot không thể bịa data hồ sơ người dùng thực tế. |
+| 🔀 **Dynamic Decision** | `5/5` | Kết quả score tương thích quyết định nhánh tiếp theo: score ≥80% → đề xuất ngay / 50–79% → hỏi thêm sở thích / <50% → tìm lại tệp ứng viên khác. |
+| ⏳ **Long Horizon** | `3/5` | Quy trình 2–4 bước, kết thúc trong 1 phiên tư vấn, chưa cần bộ nhớ dài hạn giữa các phiên. |
+| **TỔNG ĐIỂM FIT** | **17/20** | **KẾT LUẬN: BÀI TOÁN RẤT NÊN DÙNG REACT AGENT!** |
 
 ---
 
